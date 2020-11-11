@@ -19,11 +19,8 @@
 #ifndef __REDIS_CONNECTOR_H
 #define __REDIS_CONNECTOR_H
 
-#include <string>
-#include <iostream>
-#include <Windows.h>
+#include "PreDefine.h"
 #include "hiredis/hiredis.h"
-#include <winsock2.h>
 using namespace std;
 
 // redfine types from "hiredis.h"
@@ -53,20 +50,20 @@ constexpr INT OP_FAILED  = 0x1;
 C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C---C-C*/
 class RedisConnector
 {
-    private:
-        HINSTANCE redis_lib;
-        P_REDIS_CONTEXT p_redis_context;
-        P_REDIS_REPLY   p_redis_reply;
-        string address;
-        INT port;
-        timeval timeout;
+private:
+    HINSTANCE redis_lib;
+    P_REDIS_CONTEXT p_redis_context;
+    P_REDIS_REPLY   p_redis_reply;
+    string address;
+    INT port;
+    timeval timeout;
 
-    public:
-        RedisConnector(const string address, const INT port);
-        ~RedisConnector();
-        INT Connect();
-        INT ExecuteCommand(const string command);
-        VOID TestRedis();
+public:
+    RedisConnector(const string address, const INT port);
+    ~RedisConnector();
+    INT Connect();
+    INT ExecuteCommand(const string command);
+    VOID TestRedis();
 };
 
 #endif
