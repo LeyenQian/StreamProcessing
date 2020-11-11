@@ -27,8 +27,10 @@
 using namespace std;
 
 // redfine types from "hiredis.h"
-typedef redisContext  REDIS_CONTEXT;
-typedef redisContext* P_REDIS_CONTEXT;
+typedef redisContext    REDIS_CONTEXT;
+typedef redisContext*   P_REDIS_CONTEXT;
+typedef redisReply      REDIS_REPLY;
+typedef redisReply*     P_REDIS_REPLY;
 
 constexpr INT OP_SUCCESS = 0x0;
 constexpr INT OP_FAILED  = 0x1;
@@ -54,15 +56,17 @@ class RedisConnector
     private:
         HINSTANCE redis_lib;
         P_REDIS_CONTEXT p_redis_context;
+        P_REDIS_REPLY   p_redis_reply;
         string address;
         INT port;
-        struct timeval timeout;
+        timeval timeout;
 
     public:
         RedisConnector(const string address, const INT port);
         ~RedisConnector();
         INT Connect();
         INT ExecuteCommand(const string command);
+        VOID TestRedis();
 };
 
 #endif
