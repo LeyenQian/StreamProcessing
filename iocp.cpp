@@ -15,3 +15,5 @@
   Copyright and Legal notices.
   Copyright and Legal notices.
 ===================================================================+*/
+#include "pre_define.h"
+#include "redis_connector.h"
