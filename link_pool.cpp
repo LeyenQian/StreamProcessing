@@ -35,7 +35,7 @@ OPSTATUS LinkPool::LinkPoolBuild()
 
 	if ( p_per_link_info == NULL || p_per_io_info == NULL )
 	{
-		printf( "[IOCP] allocate links pool failed\n" );
+		printf( "#Err: allocate links pool failed\n" );
 		return FALSE;
 	}
 
@@ -62,7 +62,7 @@ OPSTATUS LinkPool::LinkPoolBuild()
 		p_per_link_info[i].socket = WSASocket( AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED );
 		if ( p_per_link_info[i].socket == INVALID_SOCKET )
 		{
-			printf( "[IOCP] initial link pool failed\n" );
+			printf( "#Err: initial link pool failed\n" );
 			return FALSE;
 		}
 
@@ -121,7 +121,7 @@ PPER_LINK_INFO LinkPool::LinkPoolAlloc()
 	}
 	else
 	{
-		printf( "[IOCP] no available link in pool\n" );
+		printf( "#Err: no available link in pool\n" );
 	}
 
 	LeaveCriticalSection(&CriticalSection);
