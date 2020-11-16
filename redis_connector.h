@@ -19,18 +19,14 @@
 #ifndef __REDIS_CONNECTOR_H
 #define __REDIS_CONNECTOR_H
 
-#include "PreDefine.h"
+#include "pre_define.h"
 #include "hiredis/hiredis.h"
-using namespace std;
 
 // redfine types from "hiredis.h"
 typedef redisContext    REDIS_CONTEXT;
 typedef redisContext*   P_REDIS_CONTEXT;
 typedef redisReply      REDIS_REPLY;
 typedef redisReply*     P_REDIS_REPLY;
-
-constexpr INT OP_SUCCESS = 0x0;
-constexpr INT OP_FAILED  = 0x1;
 
 /*C+C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C+++C
   Class:    RedisConnector
