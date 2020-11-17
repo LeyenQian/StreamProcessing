@@ -33,6 +33,7 @@ typedef INT OPSTATUS;
 #define SM_OVER             0x2
 #define SM_FAIL             0x3
 
+#define MSG_HEART_BEAT			0x1
 
 typedef struct _CLIENT_INFO
 {
