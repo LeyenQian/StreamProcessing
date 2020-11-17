@@ -39,49 +39,12 @@ OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
 
 UINT WINAPI IOCP::AgingThread( LPVOID ArgList )
 {
+    IOCP* p_this = static_cast<IOCP *>(ArgList);
+
     while( TRUE )
     {
         Sleep( 1000 );
-        for ( ULONG j = 0; j < MAX_LINK_NUM; ++ j )
-        {
-            PPER_LINK_INFO pPerLinkInfo = &LinkPoolManage.pPerLinkInfo[j];
-
-            switch( pPerLinkInfo->StateMachine )
-            {
-            case SM_IDLE:
-                {
-                    pPerLinkInfo->HeatbeatInfo.HoldTime = 240;
-                }
-                break;
-
-            case SM_FULL:
-                {
-                    pPerLinkInfo->HeatbeatInfo.HoldTime == 60 ? pPerLinkInfo->StateMachine = SM_OVER : pPerLinkInfo->HeatbeatInfo.HoldTime -= 1;
-
-                    if ( pPerLinkInfo->HeatbeatInfo.HoldTime % 60 == 0 && pPerLinkInfo->HeatbeatInfo.HoldTime != 240 )
-                    {
-                        pPerLinkInfo->HeatbeatInfo.LostNum ++;
-                    }
-                }
-                break;
-
-            case SM_OVER:
-                {
-                    pPerLinkInfo->HeatbeatInfo.HoldTime == 0 ? pPerLinkInfo->StateMachine = SM_FAIL : pPerLinkInfo->HeatbeatInfo.HoldTime -= 1;
-                }
-                break;
-
-            case SM_FAIL:
-                {
-                    DisconnectEx( pPerLinkInfo->Socket, NULL, TF_REUSE_SOCKET, 0 );
-                    pPerLinkInfo->FreeFlag = LINK_FREE;
-                    pPerLinkInfo->StateMachine = SM_IDLE;
-                    pPerLinkInfo->HeatbeatInfo.HoldTime = 240;
-                    pPerLinkInfo->HeatbeatInfo.LostNum = 0;
-                }
-                break;
-            }
-        }
+        p_this->link_pool.LinkPoolCheck(p_this->p_DisconnectEx);
     }
     return 0;
 }
@@ -158,8 +121,6 @@ OPSTATUS IOCP::AcceptClient( PPER_LINK_INFO pSerLinkInfo, PPER_IO_INFO pAcceIoIn
 UINT WINAPI IOCP::DealThread( LPVOID ArgList )
 {
     IOCP* p_this = static_cast<IOCP *>(ArgList);
-    HANDLE h_iocp = p_this->h_iocp;
-    PPER_LINK_INFO p_ser_link_info = p_this->p_ser_link_info;
 
     ULONG ActualTrans = 0;
     OVERLAPPED *pOverlapped = NULL;   
@@ -168,7 +129,7 @@ UINT WINAPI IOCP::DealThread( LPVOID ArgList )
 
     while( TRUE )
     {
-        GetQueuedCompletionStatus( h_iocp, &ActualTrans, (PULONG_PTR)&pPerLinkInfo, &pOverlapped, INFINITE );
+        GetQueuedCompletionStatus( p_this->h_iocp, &ActualTrans, (PULONG_PTR)&pPerLinkInfo, &pOverlapped, INFINITE );
         pPerIOInfo = (PPER_IO_INFO)CONTAINING_RECORD( pOverlapped, PER_IO_INFO, overlapped );
 
         if( pPerIOInfo->op_type == IO_ACCE )

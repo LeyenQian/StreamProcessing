@@ -10,4 +10,5 @@ public:
     OPSTATUS LinkPoolBuild();
     OPSTATUS LinkPoolDestroy();
     PPER_LINK_INFO LinkPoolAlloc();
+    VOID LinkPoolCheck(LPFN_DISCONNECTEX p_DisconnectEx);
 };
