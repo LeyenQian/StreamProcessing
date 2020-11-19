@@ -5,5 +5,12 @@ IF(WIN32)
     ADD_COMPILE_DEFINITIONS(_WINSOCK_DEPRECATED_NO_WARNINGS)
 ENDIF()
 
-ADD_EXECUTABLE(server "iocp.cpp" "redis_connector.cpp" "link_pool.cpp")
+set(ENABLE_TEST ON)
+
+
+IF(ENABLE_TEST)
+  ADD_SUBDIRECTORY(client)
+ENDIF(ENABLE_TEST)
+
+ADD_EXECUTABLE(server "iocp.cpp" "redis_connector.cpp" "link_pool.cpp" "client/iocp.cpp")
 TARGET_LINK_LIBRARIES(server hiredisd)
