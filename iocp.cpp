@@ -39,7 +39,6 @@ OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
 
 UINT WINAPI IOCP::AgingThread( LPVOID ArgList )
 {
-    printf("aging thread\n");
     IOCP* p_this = static_cast<IOCP *>(ArgList);
 
     while( TRUE )
@@ -121,7 +120,6 @@ OPSTATUS IOCP::AcceptClient( PPER_LINK_INFO pSerLinkInfo, PPER_IO_INFO pAcceIoIn
 
 UINT WINAPI IOCP::DealThread( LPVOID ArgList )
 {
-    cout << "deal thread" << endl;
     IOCP* p_this = static_cast<IOCP *>(ArgList);
 
     ULONG ActualTrans = 0;
