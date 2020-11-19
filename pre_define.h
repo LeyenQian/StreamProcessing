@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <process.h>
 #include <winsock2.h>
-#include <MSWSock.h> 
+#include <MSWSock.h>
 #include <Windows.h>
 #include <iostream>
 #include <string>

@@ -2,6 +2,18 @@
 #include "list_manage.h"
 
 
+LinkPool::LinkPool()
+{
+    p_link_pool_manage = (PLINK_POOL_MANAGE)VirtualAlloc(NULL, sizeof(LINK_POOL_MANAGE), MEM_COMMIT, PAGE_READWRITE);
+}
+
+
+LinkPool::~LinkPool()
+{
+    VirtualFree(p_link_pool_manage, sizeof(LINK_POOL_MANAGE), MEM_RELEASE);
+}
+
+
 OPSTATUS LinkPool::InitWinSock()
 {
     WSAData wsa_data = {0};

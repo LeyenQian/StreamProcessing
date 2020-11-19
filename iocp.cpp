@@ -26,19 +26,20 @@ OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
     }
     ZeroMemory( &p_acce_io_info->overlapped, sizeof(OVERLAPPED) );
 
-    BOOL bRet = AcceptEx( p_ser_link_info->socket, ( *(PPER_LINK_INFO *)p_acce_io_info->buffer )->socket, &p_acce_io_info->buffer[sizeof(PPER_LINK_INFO)], 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &uBytesRet, &p_acce_io_info->overlapped );
+    BOOL bRet = p_AcceptEx( p_ser_link_info->socket, ( *(PPER_LINK_INFO *)p_acce_io_info->buffer )->socket, &p_acce_io_info->buffer[sizeof(PPER_LINK_INFO)], 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &uBytesRet, &p_acce_io_info->overlapped );
     if ( !bRet && WSAGetLastError() != WSA_IO_PENDING )
     {
         printf( "#Err: post AcceptEx failed\n" );
-        return FALSE;
+        return OP_FAILED;
     }
 
-    return TRUE;
+    return OP_SUCCESS;
 }
 
 
 UINT WINAPI IOCP::AgingThread( LPVOID ArgList )
 {
+    printf("aging thread\n");
     IOCP* p_this = static_cast<IOCP *>(ArgList);
 
     while( TRUE )
@@ -120,6 +121,7 @@ OPSTATUS IOCP::AcceptClient( PPER_LINK_INFO pSerLinkInfo, PPER_IO_INFO pAcceIoIn
 
 UINT WINAPI IOCP::DealThread( LPVOID ArgList )
 {
+    cout << "deal thread" << endl;
     IOCP* p_this = static_cast<IOCP *>(ArgList);
 
     ULONG ActualTrans = 0;
@@ -175,27 +177,10 @@ UINT WINAPI IOCP::DealThread( LPVOID ArgList )
 }
 
 
-
 OPSTATUS IOCP::InitialEnvironment()
 {
     // initial link pool
     link_pool.LinkPoolBuild();
-
-    // load lib functions
-    ULONG uBytesRet = 0;
-    GUID GuidAcceptEx = WSAID_ACCEPTEX;
-    GUID GuidGetAcceptExSockAddrs = WSAID_GETACCEPTEXSOCKADDRS;
-    GUID GuidDisconnectEx = WSAID_DISCONNECTEX;
-
-    WSAIoctl( p_ser_link_info->socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &GuidAcceptEx, sizeof(GuidAcceptEx), &p_AcceptEx, sizeof(p_AcceptEx), &uBytesRet, NULL, NULL );
-    WSAIoctl( p_ser_link_info->socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &GuidDisconnectEx, sizeof(GuidDisconnectEx),&p_DisconnectEx,sizeof(p_DisconnectEx),&uBytesRet,NULL,NULL);
-    WSAIoctl( p_ser_link_info->socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &GuidGetAcceptExSockAddrs, sizeof( GuidGetAcceptExSockAddrs ), &p_GetAcceptExSockAddrs, sizeof(p_GetAcceptExSockAddrs), &uBytesRet, NULL, NULL );
-
-    if( p_AcceptEx == NULL || p_DisconnectEx == NULL || p_GetAcceptExSockAddrs == NULL )
-    {
-        printf( "#Err: unable to load lib functions <AcceptEx, DisconnectEx, GetAcceptExSockAddrs>\n" ); 
-        return OP_FAILED;
-    }
 
     // allocate link info for server
     p_ser_link_info = (PPER_LINK_INFO)VirtualAlloc(NULL, sizeof(PER_LINK_INFO), MEM_COMMIT, PAGE_READWRITE);
@@ -217,6 +202,22 @@ OPSTATUS IOCP::InitialEnvironment()
     if ( p_ser_link_info->socket == NULL )
     {
         printf( "#Err: creating server socket failed\n" );
+        return OP_FAILED;
+    }
+
+    // load lib functions
+    ULONG uBytesRet = 0;
+    GUID GuidAcceptEx = WSAID_ACCEPTEX;
+    GUID GuidGetAcceptExSockAddrs = WSAID_GETACCEPTEXSOCKADDRS;
+    GUID GuidDisconnectEx = WSAID_DISCONNECTEX;
+
+    WSAIoctl(p_ser_link_info->socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &GuidAcceptEx, sizeof(GuidAcceptEx), &p_AcceptEx, sizeof(p_AcceptEx), &uBytesRet, NULL, NULL);
+    WSAIoctl(p_ser_link_info->socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &GuidDisconnectEx, sizeof(GuidDisconnectEx), &p_DisconnectEx, sizeof(p_DisconnectEx), &uBytesRet, NULL, NULL);
+    WSAIoctl(p_ser_link_info->socket, SIO_GET_EXTENSION_FUNCTION_POINTER, &GuidGetAcceptExSockAddrs, sizeof(GuidGetAcceptExSockAddrs), &p_GetAcceptExSockAddrs, sizeof(p_GetAcceptExSockAddrs), &uBytesRet, NULL, NULL);
+
+    if (p_AcceptEx == NULL || p_DisconnectEx == NULL || p_GetAcceptExSockAddrs == NULL)
+    {
+        printf("#Err: unable to load lib functions <AcceptEx, DisconnectEx, GetAcceptExSockAddrs>\n");
         return OP_FAILED;
     }
 
@@ -263,7 +264,7 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
     // create 10 deal threads
     for (ULONG i = 0; i < 10; i ++)
     {
-        if ( ( h_thread[i] = (HANDLE)_beginthreadex( NULL, 0, &IOCP::DealThread, this, 0, NULL ) ) == NULL )
+        if ( ( h_thread[i] = (HANDLE)_beginthreadex( NULL, 0, IOCP::DealThread, this, 0, NULL ) ) == NULL )
         {
             printf( "#Err: start IOCP thread failed\n" );
             return OP_FAILED;
@@ -271,12 +272,11 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
     }
 
     // create aging thread
-    if ( ( h_thread[10] = (HANDLE)_beginthreadex( NULL, 0, &IOCP::AgingThread, this, 0, NULL ) ) == NULL )
+    if ( ( h_thread[10] = (HANDLE)_beginthreadex( NULL, 0, IOCP::AgingThread, this, 0, NULL ) ) == NULL )
     {
         printf( "#Err: start IOCP aging thread failed\n" );
         return OP_FAILED;
     }
-
 
     for ( ULONG i = 0; i < 10; ++ i )
     {
@@ -290,6 +290,11 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
         }
     }
 
+    while (TRUE)
+    {
+        Sleep(1000);
+    }
+
     return OP_SUCCESS;
 }
 
@@ -297,4 +302,13 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
 IOCP::IOCP()
 {
 
+    InitialEnvironment();
+}
+
+
+int main(int argc, char const *argv[])
+{
+    IOCP server;
+    server.CompletePortStart("127.0.0.1", 5001);
+    return 0;
 }

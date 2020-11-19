@@ -23,7 +23,6 @@
 class IOCP
 {
 private:
-    HANDLE h_iocp = NULL;
     HANDLE h_thread[11]  = {0};
     PPER_IO_INFO p_acce_io_info = NULL;
     PPER_LINK_INFO p_ser_link_info = NULL;
@@ -35,8 +34,8 @@ private:
     LPFN_GETACCEPTEXSOCKADDRS p_GetAcceptExSockAddrs = NULL;
 
 public:
+    HANDLE h_iocp = NULL;
     IOCP();
-    ~IOCP();
     OPSTATUS InitialEnvironment();
     OPSTATUS CompletePortStart( string Address, INT Port );
 
