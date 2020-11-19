@@ -2,7 +2,8 @@
 
 IF(WIN32)
     ADD_COMPILE_DEFINITIONS(_CRT_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN)
+    ADD_COMPILE_DEFINITIONS(_WINSOCK_DEPRECATED_NO_WARNINGS)
 ENDIF()
 
-ADD_EXECUTABLE(redis_connector "redis_connector.cpp" "iocp.cpp" "iocp.h" "PreDefine.h")
-TARGET_LINK_LIBRARIES(redis_connector hiredisd)
+ADD_EXECUTABLE(server "iocp.cpp" "redis_connector.cpp" "link_pool.cpp")
+TARGET_LINK_LIBRARIES(server hiredisd)
