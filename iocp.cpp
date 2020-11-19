@@ -308,8 +308,8 @@ IOCP::IOCP()
 IOCP::~IOCP()
 {
     link_pool.LinkPoolDestroy();
-    VirtualFree(p_acce_io_info, sizeof(PER_LINK_INFO), MEM_RELEASE);
-    VirtualFree(p_ser_link_info, sizeof(PER_IO_INFO), MEM_RELEASE);
+    VirtualFree(p_acce_io_info, 0, MEM_RELEASE);
+    VirtualFree(p_ser_link_info, 0, MEM_RELEASE);
 }
 
 

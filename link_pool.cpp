@@ -10,7 +10,7 @@ LinkPool::LinkPool()
 
 LinkPool::~LinkPool()
 {
-    VirtualFree(p_link_pool_manage, sizeof(LINK_POOL_MANAGE), MEM_RELEASE);
+    VirtualFree(p_link_pool_manage, 0, MEM_RELEASE);
 }
 
 
