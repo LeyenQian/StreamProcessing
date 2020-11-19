@@ -104,7 +104,6 @@ OPSTATUS LinkPool::LinkPoolDestroy()
 }
 
 
-
 PPER_LINK_INFO LinkPool::LinkPoolAlloc()
 {
     PPER_LINK_INFO p_per_link_info = NULL;
@@ -140,6 +139,7 @@ PPER_LINK_INFO LinkPool::LinkPoolAlloc()
 
     return p_per_link_info;
 }
+
 
 VOID LinkPool::LinkPoolCheck(LPFN_DISCONNECTEX p_DisconnectEx)
 {

@@ -36,6 +36,7 @@ private:
 public:
     HANDLE h_iocp = NULL;
     IOCP();
+    ~IOCP();
     OPSTATUS InitialEnvironment();
     OPSTATUS CompletePortStart( string Address, INT Port );
 

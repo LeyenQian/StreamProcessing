@@ -301,8 +301,15 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
 
 IOCP::IOCP()
 {
-
     InitialEnvironment();
+}
+
+
+IOCP::~IOCP()
+{
+    link_pool.LinkPoolDestroy();
+    VirtualFree(p_acce_io_info, sizeof(PER_LINK_INFO), MEM_RELEASE);
+    VirtualFree(p_ser_link_info, sizeof(PER_IO_INFO), MEM_RELEASE);
 }
 
 
