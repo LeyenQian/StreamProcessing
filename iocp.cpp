@@ -22,7 +22,7 @@ OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
     ULONG uBytesRet = 0;
     if ( (*(PPER_LINK_INFO *)p_acce_io_info->buffer = link_pool.LinkPoolAlloc()) == NULL )
     {
-        return FALSE;
+        return OP_FAILED;
     }
     ZeroMemory( &p_acce_io_info->overlapped, sizeof(OVERLAPPED) );
 
@@ -104,7 +104,7 @@ OPSTATUS IOCP::AcceptClient( PPER_LINK_INFO pSerLinkInfo, PPER_IO_INFO pAcceIoIn
 {
     PPER_LINK_INFO pPerLinkInfo = *(PPER_LINK_INFO *)pAcceIoInfo->buffer;
 
-    if ( CreateIoCompletionPort( (HANDLE)pPerLinkInfo->socket, h_iocp, (ULONG)pPerLinkInfo, 0 ) == NULL )
+    if ( CreateIoCompletionPort( (HANDLE)pPerLinkInfo->socket, h_iocp, (ULONG_PTR)pPerLinkInfo, 0 ) == NULL )
     {
         printf( "#Err: accept client failed\n" );
         p_DisconnectEx( pPerLinkInfo->socket, NULL, TF_REUSE_SOCKET, 0 );
@@ -262,6 +262,7 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
     // create 10 deal threads
     for (ULONG i = 0; i < 10; i ++)
     {
+        printf("#Log: start IOCP deal thread #%u\n", i + 1);
         if ( ( h_thread[i] = (HANDLE)_beginthreadex( NULL, 0, IOCP::DealThread, this, 0, NULL ) ) == NULL )
         {
             printf( "#Err: start IOCP thread failed\n" );
@@ -275,6 +276,7 @@ OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
         printf( "#Err: start IOCP aging thread failed\n" );
         return OP_FAILED;
     }
+    printf("#Log: start IOCP aging thread\n");
 
     for ( ULONG i = 0; i < 10; ++ i )
     {
@@ -313,7 +315,11 @@ IOCP::~IOCP()
 
 int main(int argc, char const *argv[])
 {
+    printf("------------------- Test Redis -------------------\n");
+    RedisConnector_Test();
+
+    printf("\n\n------------------- Test  IOCP -------------------\n");
     IOCP server;
-    server.CompletePortStart("127.0.0.1", 5001);
+    server.CompletePortStart("127.0.0.1", 9001);
     return 0;
 }

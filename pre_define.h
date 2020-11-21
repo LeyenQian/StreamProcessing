@@ -88,8 +88,8 @@ typedef struct _PACKET_HEADER
 {
 	ULONG comm_code;
 	ULONG packet_len;
-
+	// ...
 } PACKET_HEADER, *PPACKET_HEADER;
 
-
+void RedisConnector_Test();
 #endif
