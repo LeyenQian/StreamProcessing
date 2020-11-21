@@ -19,14 +19,14 @@
 
 OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
 {
-    ULONG uBytesRet = 0;
+    ULONG u_bytes_ret = 0;
     if ( (*(PPER_LINK_INFO *)p_acce_io_info->buffer = link_pool.LinkPoolAlloc()) == NULL )
     {
         return OP_FAILED;
     }
     ZeroMemory( &p_acce_io_info->overlapped, sizeof(OVERLAPPED) );
 
-    BOOL bRet = p_AcceptEx( p_ser_link_info->socket, ( *(PPER_LINK_INFO *)p_acce_io_info->buffer )->socket, &p_acce_io_info->buffer[sizeof(PPER_LINK_INFO)], 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &uBytesRet, &p_acce_io_info->overlapped );
+    BOOL bRet = p_AcceptEx( p_ser_link_info->socket, ( *(PPER_LINK_INFO *)p_acce_io_info->buffer )->socket, &p_acce_io_info->buffer[sizeof(PPER_LINK_INFO)], 0, sizeof(SOCKADDR_IN) + 16, sizeof(SOCKADDR_IN) + 16, &u_bytes_ret, &p_acce_io_info->overlapped );
     if ( !bRet && WSAGetLastError() != WSA_IO_PENDING )
     {
         printf( "#Err: post AcceptEx failed\n" );
@@ -37,9 +37,9 @@ OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
 }
 
 
-UINT WINAPI IOCP::AgingThread( LPVOID ArgList )
+UINT WINAPI IOCP::AgingThread( LPVOID arg_list )
 {
-    IOCP* p_this = static_cast<IOCP *>(ArgList);
+    IOCP* p_this = static_cast<IOCP *>(arg_list);
 
     while( TRUE )
     {
@@ -50,16 +50,16 @@ UINT WINAPI IOCP::AgingThread( LPVOID ArgList )
 }
 
 
-OPSTATUS IOCP::PostRecv( PPER_LINK_INFO pPerLinkInfo, ULONG BuffOffest, ULONG BuffLen )
+OPSTATUS IOCP::PostRecv( PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len )
 {
-    ULONG uFlag = 0;
-    ULONG uRecv = 0;
+    ULONG u_flag = 0;
+    ULONG u_recv = 0;
 
-    ZeroMemory( &pPerLinkInfo->p_per_io_info[0].overlapped, sizeof(OVERLAPPED) );
-    pPerLinkInfo->p_per_io_info[0].w_buf.buf = &pPerLinkInfo->p_per_io_info[0].buffer[BuffOffest];
-    pPerLinkInfo->p_per_io_info[0].w_buf.len = BuffLen;
+    ZeroMemory( &p_per_link_info->p_per_io_info[0].overlapped, sizeof(OVERLAPPED) );
+    p_per_link_info->p_per_io_info[0].w_buf.buf = &p_per_link_info->p_per_io_info[0].buffer[buff_offset];
+    p_per_link_info->p_per_io_info[0].w_buf.len = buff_len;
 
-    if( WSARecv( pPerLinkInfo->socket, &pPerLinkInfo->p_per_io_info[0].w_buf, 1, &uRecv, &uFlag, &pPerLinkInfo->p_per_io_info[0].overlapped, NULL ) == SOCKET_ERROR && 
+    if( WSARecv( p_per_link_info->socket, &p_per_link_info->p_per_io_info[0].w_buf, 1, &u_recv, &u_flag, &p_per_link_info->p_per_io_info[0].overlapped, NULL ) == SOCKET_ERROR &&
         WSAGetLastError() != WSA_IO_PENDING )
     {
         printf( "#Err: post receive failed, discard connection\n" );
@@ -70,29 +70,29 @@ OPSTATUS IOCP::PostRecv( PPER_LINK_INFO pPerLinkInfo, ULONG BuffOffest, ULONG Bu
 }
 
 
-OPSTATUS IOCP::IsRecvFinish( PPER_LINK_INFO pPerLinkInfo, ULONG ActualTrans )
+OPSTATUS IOCP::IsRecvFinish( PPER_LINK_INFO p_per_link_info, ULONG actual_trans )
 {
     // package length cannot bigger than buffer 
-    if ( pPerLinkInfo->p_per_io_info[0].w_buf.len != ActualTrans )
+    if ( p_per_link_info->p_per_io_info[0].w_buf.len != actual_trans )
     {
         // not completely, post receive
-        pPerLinkInfo->p_per_io_info[0].curr_data_len += ActualTrans;
-        PostRecv( pPerLinkInfo, ActualTrans, pPerLinkInfo->p_per_io_info[0].w_buf.len - ActualTrans );
-        pPerLinkInfo->p_per_io_info[0].post_recv_times ++;
+        p_per_link_info->p_per_io_info[0].curr_data_len += actual_trans;
+        PostRecv( p_per_link_info, actual_trans, p_per_link_info->p_per_io_info[0].w_buf.len - actual_trans );
+        p_per_link_info->p_per_io_info[0].post_recv_times ++;
         return FALSE;
     }
     else
     {
         // received completely, change reveived length
-        pPerLinkInfo->p_per_io_info[0].curr_data_len += ActualTrans;
+        p_per_link_info->p_per_io_info[0].curr_data_len += actual_trans;
     }
 
     // package length bigger than buffer, discard the link directly
-    if ( ((PPACKET_HEADER)( pPerLinkInfo->p_per_io_info[0].buffer ))->packet_len >= sizeof(PACKET_HEADER) && ((PPACKET_HEADER)( pPerLinkInfo->p_per_io_info[0].buffer ))->packet_len > pPerLinkInfo->p_per_io_info[0].curr_data_len)
+    if ( ((PPACKET_HEADER)( p_per_link_info->p_per_io_info[0].buffer ))->packet_len >= sizeof(PACKET_HEADER) && ((PPACKET_HEADER)( p_per_link_info->p_per_io_info[0].buffer ))->packet_len > p_per_link_info->p_per_io_info[0].curr_data_len)
     {
         // not completely, post receive
-        PostRecv( pPerLinkInfo, pPerLinkInfo->p_per_io_info[0].curr_data_len, ((PPACKET_HEADER)( pPerLinkInfo->p_per_io_info[0].buffer ))->packet_len - pPerLinkInfo->p_per_io_info[0].curr_data_len );
-        pPerLinkInfo->p_per_io_info[0].post_recv_times ++;
+        PostRecv( p_per_link_info, p_per_link_info->p_per_io_info[0].curr_data_len, ((PPACKET_HEADER)( p_per_link_info->p_per_io_info[0].buffer ))->packet_len - p_per_link_info->p_per_io_info[0].curr_data_len );
+        p_per_link_info->p_per_io_info[0].post_recv_times ++;
         return FALSE;
     }
 
@@ -100,72 +100,72 @@ OPSTATUS IOCP::IsRecvFinish( PPER_LINK_INFO pPerLinkInfo, ULONG ActualTrans )
 }
 
 
-OPSTATUS IOCP::AcceptClient( PPER_LINK_INFO pSerLinkInfo, PPER_IO_INFO pAcceIoInfo )
+OPSTATUS IOCP::AcceptClient(PPER_IO_INFO p_per_io_Info)
 {
-    PPER_LINK_INFO pPerLinkInfo = *(PPER_LINK_INFO *)pAcceIoInfo->buffer;
+    PPER_LINK_INFO p_per_link_info = *(PPER_LINK_INFO *)p_per_io_Info->buffer;
 
-    if ( CreateIoCompletionPort( (HANDLE)pPerLinkInfo->socket, h_iocp, (ULONG_PTR)pPerLinkInfo, 0 ) == NULL )
+    if ( CreateIoCompletionPort( (HANDLE)p_per_link_info->socket, h_iocp, (ULONG_PTR)p_per_link_info, 0 ) == NULL )
     {
         printf( "#Err: accept client failed\n" );
-        p_DisconnectEx( pPerLinkInfo->socket, NULL, TF_REUSE_SOCKET, 0 );
+        p_DisconnectEx( p_per_link_info->socket, NULL, TF_REUSE_SOCKET, 0 );
     }
 
-    pPerLinkInfo->state_machine = SM_FULL;
-    PostAcceptEx( pAcceIoInfo );
-    PostRecv( pPerLinkInfo, 0, sizeof(PACKET_HEADER) );
+    p_per_link_info->state_machine = SM_FULL;
+    PostAcceptEx(p_per_io_Info);
+    PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER) );
 
     return TRUE;
 }
 
 
-UINT WINAPI IOCP::DealThread( LPVOID ArgList )
+UINT WINAPI IOCP::DealThread( LPVOID arg_list )
 {
-    IOCP* p_this = static_cast<IOCP *>(ArgList);
+    IOCP* p_this = static_cast<IOCP *>(arg_list);
 
-    ULONG ActualTrans = 0;
-    OVERLAPPED *pOverlapped = NULL;   
-    PPER_IO_INFO pPerIOInfo = NULL;
-    PPER_LINK_INFO pPerLinkInfo = NULL;
+    ULONG actual_trans = 0;
+    OVERLAPPED *p_overlapped = NULL;   
+    PPER_IO_INFO p_per_io_Info = NULL;
+    PPER_LINK_INFO p_per_link_info = NULL;
 
     while( TRUE )
     {
-        GetQueuedCompletionStatus( p_this->h_iocp, &ActualTrans, (PULONG_PTR)&pPerLinkInfo, &pOverlapped, INFINITE );
-        pPerIOInfo = (PPER_IO_INFO)CONTAINING_RECORD( pOverlapped, PER_IO_INFO, overlapped );
+        GetQueuedCompletionStatus( p_this->h_iocp, &actual_trans, (PULONG_PTR)&p_per_link_info, &p_overlapped, INFINITE );
+        p_per_io_Info = (PPER_IO_INFO)CONTAINING_RECORD(p_overlapped, PER_IO_INFO, overlapped );
 
-        if( pPerIOInfo->op_type == IO_ACCE )
+        if(p_per_io_Info->op_type == IO_ACCE )
         {
             printf("Received Client Connection Request\n");
-            p_this->AcceptClient( pPerLinkInfo, pPerIOInfo );
+            p_this->AcceptClient(p_per_io_Info);
         }
-        else if( pPerIOInfo->op_type == IO_RECV )
+        else if(p_per_io_Info->op_type == IO_RECV )
         {
             // break, if the package received is not complete
-            if ( !p_this->IsRecvFinish( pPerLinkInfo, ActualTrans ) ) continue;
+            if ( !p_this->IsRecvFinish( p_per_link_info, actual_trans ) ) continue;
 
             // receive completed. prepare for next package receiving
-            pPerLinkInfo->p_per_io_info[0].w_buf.len = sizeof(PACKET_HEADER);
-            pPerLinkInfo->p_per_io_info[0].w_buf.buf = pPerLinkInfo->p_per_io_info[0].buffer;
-            pPerLinkInfo->p_per_io_info[0].curr_data_len = 0;
+            p_per_link_info->p_per_io_info[0].w_buf.len = sizeof(PACKET_HEADER);
+            p_per_link_info->p_per_io_info[0].w_buf.buf = p_per_link_info->p_per_io_info[0].buffer;
+            p_per_link_info->p_per_io_info[0].curr_data_len = 0;
 
             // do different thing for different communication code
-            switch( ((PPACKET_HEADER)pPerIOInfo->buffer)->comm_code )
+            switch( ((PPACKET_HEADER)p_per_io_Info->buffer)->comm_code )
             {
                 case MSG_HEART_BEAT:
                 {
-                    if ( pPerLinkInfo->state_machine == SM_FULL || pPerLinkInfo->state_machine == SM_OVER )
+                    if ( p_per_link_info->state_machine == SM_FULL || p_per_link_info->state_machine == SM_OVER )
                     {
-                        pPerLinkInfo->state_machine = SM_FULL;
-                        pPerLinkInfo->heartbeat_info.hold_time = 240;
+                        p_per_link_info->state_machine = SM_FULL;
+                        p_per_link_info->heartbeat_info.hold_time = 240;
                     }
-                    p_this->PostRecv( pPerLinkInfo, 0, sizeof(PACKET_HEADER) );
+                    p_this->PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER) );
                     break;
                 }
 
                 default:
                 {
-                    pPerLinkInfo->state_machine = SM_FULL;
-                    pPerLinkInfo->heartbeat_info.hold_time = 240;
-                    p_this->PostRecv( pPerLinkInfo, 0, sizeof(PACKET_HEADER));
+                    p_per_link_info->state_machine = SM_FULL;
+                    p_per_link_info->heartbeat_info.hold_time = 240;
+                    p_this->PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER));
                     break;
                 }
             }
@@ -223,12 +223,12 @@ OPSTATUS IOCP::InitialEnvironment()
 }
 
 
-OPSTATUS IOCP::CompletePortStart( string Address, INT Port )
+OPSTATUS IOCP::CompletePortStart( string address, INT port )
 {
     SOCKADDR_IN sock_addr = {0};
     sock_addr.sin_family = AF_INET;
-    sock_addr.sin_port = htons( Port );
-    sock_addr.sin_addr.S_un.S_addr = inet_addr( Address.c_str() );
+    sock_addr.sin_port = htons(port);
+    sock_addr.sin_addr.S_un.S_addr = inet_addr(address.c_str() );
 
     // bind socket to address & port
     if ( bind( p_ser_link_info->socket, (PSOCKADDR)&sock_addr, sizeof(SOCKADDR_IN) ) != 0 )

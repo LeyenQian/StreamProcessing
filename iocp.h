@@ -39,13 +39,13 @@ public:
     IOCP();
     ~IOCP();
 
-    static UINT WINAPI DealThread(LPVOID ArgList);
-    static UINT WINAPI AgingThread(LPVOID ArgList);
+    static UINT WINAPI DealThread(LPVOID arg_list);
+    static UINT WINAPI AgingThread(LPVOID arg_list);
 
     OPSTATUS InitialEnvironment();
-    OPSTATUS CompletePortStart( string Address, INT Port );
-    OPSTATUS AcceptClient( PPER_LINK_INFO pSerLinkInfo, PPER_IO_INFO pAcceIoInfo );
-    OPSTATUS IsRecvFinish( PPER_LINK_INFO pPerLinkInfo, ULONG ActualTrans );
-    OPSTATUS PostRecv( PPER_LINK_INFO pPerLinkInfo, ULONG BuffOffest, ULONG BuffLen );
+    OPSTATUS CompletePortStart( string address, INT port );
+    OPSTATUS AcceptClient(PPER_IO_INFO p_per_io_Info);
+    OPSTATUS IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans);
+    OPSTATUS PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len);
     OPSTATUS PostAcceptEx( PPER_IO_INFO p_acce_io_info );
 };
