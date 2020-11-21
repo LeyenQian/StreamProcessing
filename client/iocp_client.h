@@ -32,6 +32,7 @@ private:
 
 public:
     HANDLE h_iocp = NULL;
+
     IOCP_Client();
     ~IOCP_Client();
 
@@ -40,7 +41,7 @@ public:
 
     OPSTATUS InitWinSock();
     OPSTATUS InitialEnvironment();
-    OPSTATUS CompletePortStart(string Address, INT Port);
-    OPSTATUS IsRecvFinish(PPER_LINK_INFO pPerLinkInfo, ULONG ActualTrans);
-    OPSTATUS PostRecv(PPER_LINK_INFO pPerLinkInfo, ULONG BuffOffest, ULONG BuffLen);
+    OPSTATUS CompletePortStart(string address, INT port);
+    OPSTATUS IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans);
+    OPSTATUS PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len);
 };

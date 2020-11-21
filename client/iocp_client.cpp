@@ -21,16 +21,16 @@ OPSTATUS IOCP_Client::InitWinSock()
 }
 
 
-OPSTATUS IOCP_Client::PostRecv(PPER_LINK_INFO pPerLinkInfo, ULONG BuffOffest, ULONG BuffLen)
+OPSTATUS IOCP_Client::PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len)
 {
-    ULONG uFlag = 0;
-    ULONG uRecv = 0;
+    ULONG u_flag = 0;
+    ULONG u_recv = 0;
 
-    ZeroMemory(&pPerLinkInfo->p_per_io_info[0].overlapped, sizeof(OVERLAPPED));
-    pPerLinkInfo->p_per_io_info[0].w_buf.buf = &pPerLinkInfo->p_per_io_info[0].buffer[BuffOffest];
-    pPerLinkInfo->p_per_io_info[0].w_buf.len = BuffLen;
+    ZeroMemory(&p_per_link_info->p_per_io_info[0].overlapped, sizeof(OVERLAPPED));
+    p_per_link_info->p_per_io_info[0].w_buf.buf = &p_per_link_info->p_per_io_info[0].buffer[buff_offset];
+    p_per_link_info->p_per_io_info[0].w_buf.len = buff_len;
 
-    if (WSARecv(pPerLinkInfo->socket, &pPerLinkInfo->p_per_io_info[0].w_buf, 1, &uRecv, &uFlag, &pPerLinkInfo->p_per_io_info[0].overlapped, NULL) == SOCKET_ERROR &&
+    if (WSARecv(p_per_link_info->socket, &p_per_link_info->p_per_io_info[0].w_buf, 1, &u_recv, &u_flag, &p_per_link_info->p_per_io_info[0].overlapped, NULL) == SOCKET_ERROR &&
         WSAGetLastError() != WSA_IO_PENDING)
     {
         printf("#Err: post receive failed, discard connection\n");
@@ -41,29 +41,29 @@ OPSTATUS IOCP_Client::PostRecv(PPER_LINK_INFO pPerLinkInfo, ULONG BuffOffest, UL
 }
 
 
-OPSTATUS IOCP_Client::IsRecvFinish(PPER_LINK_INFO pPerLinkInfo, ULONG ActualTrans)
+OPSTATUS IOCP_Client::IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans)
 {
     // package length cannot bigger than buffer 
-    if (pPerLinkInfo->p_per_io_info[0].w_buf.len != ActualTrans)
+    if (p_per_link_info->p_per_io_info[0].w_buf.len != actual_trans)
     {
         // not completely, post receive
-        pPerLinkInfo->p_per_io_info[0].curr_data_len += ActualTrans;
-        PostRecv(pPerLinkInfo, ActualTrans, pPerLinkInfo->p_per_io_info[0].w_buf.len - ActualTrans);
-        pPerLinkInfo->p_per_io_info[0].post_recv_times++;
+        p_per_link_info->p_per_io_info[0].curr_data_len += actual_trans;
+        PostRecv(p_per_link_info, actual_trans, p_per_link_info->p_per_io_info[0].w_buf.len - actual_trans);
+        p_per_link_info->p_per_io_info[0].post_recv_times++;
         return FALSE;
     }
     else
     {
         // received completely, change reveived length
-        pPerLinkInfo->p_per_io_info[0].curr_data_len += ActualTrans;
+        p_per_link_info->p_per_io_info[0].curr_data_len += actual_trans;
     }
 
     // package length bigger than buffer, discard the link directly
-    if (((PPACKET_HEADER)(pPerLinkInfo->p_per_io_info[0].buffer))->packet_len >= sizeof(PACKET_HEADER) && ((PPACKET_HEADER)(pPerLinkInfo->p_per_io_info[0].buffer))->packet_len > pPerLinkInfo->p_per_io_info[0].curr_data_len)
+    if (((PPACKET_HEADER)(p_per_link_info->p_per_io_info[0].buffer))->packet_len >= sizeof(PACKET_HEADER) && ((PPACKET_HEADER)(p_per_link_info->p_per_io_info[0].buffer))->packet_len > p_per_link_info->p_per_io_info[0].curr_data_len)
     {
         // not completely, post receive
-        PostRecv(pPerLinkInfo, pPerLinkInfo->p_per_io_info[0].curr_data_len, ((PPACKET_HEADER)(pPerLinkInfo->p_per_io_info[0].buffer))->packet_len - pPerLinkInfo->p_per_io_info[0].curr_data_len);
-        pPerLinkInfo->p_per_io_info[0].post_recv_times++;
+        PostRecv(p_per_link_info, p_per_link_info->p_per_io_info[0].curr_data_len, ((PPACKET_HEADER)(p_per_link_info->p_per_io_info[0].buffer))->packet_len - p_per_link_info->p_per_io_info[0].curr_data_len);
+        p_per_link_info->p_per_io_info[0].post_recv_times++;
         return FALSE;
     }
 
@@ -108,18 +108,18 @@ OPSTATUS IOCP_Client::InitialEnvironment()
 }
 
 
-OPSTATUS IOCP_Client::CompletePortStart(string Address, INT Port)
+OPSTATUS IOCP_Client::CompletePortStart(string address, INT port)
 {
     SOCKADDR_IN sock_addr = { 0 };
     sock_addr.sin_family = AF_INET;
-    sock_addr.sin_port = htons(Port);
-    sock_addr.sin_addr.S_un.S_addr = inet_addr(Address.c_str());
+    sock_addr.sin_port = htons(port);
+    sock_addr.sin_addr.S_un.S_addr = inet_addr(address.c_str());
 
     // connect to server side
     while (TRUE)
     {
         Sleep(1000);
-        printf("#Log: Try to connect the server from %s : %d\n", Address.c_str(), Port);
+        printf("#Log: Try to connect the server from %s : %d\n", address.c_str(), port);
         if (connect(p_ser_link_info->socket, (PSOCKADDR)&sock_addr, sizeof(SOCKADDR_IN)) == 0)
         {
             break;
