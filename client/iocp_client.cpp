@@ -201,9 +201,9 @@ UINT WINAPI IOCP_Client::DealThread(LPVOID arg_list)
                 printf("#Log: Logon succeed!\n");
                 p_this->logon_status = TRUE;
 
-                if ((p_this->h_thread[1] = (HANDLE)_beginthreadex(NULL, 0, IOCP_Client::HeartBeatThread, NULL, 0, NULL)) == NULL)
+                if ((p_this->h_thread[1] = (HANDLE)_beginthreadex(NULL, 0, IOCP_Client::HeartBeatThread, p_this, 0, NULL)) == NULL)
                 {
-                    printf("[IOCP] build aginethread failed\n");
+                    printf("#Err: build aginethread failed\n");
                     return FALSE;
                 }
                 p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
@@ -212,7 +212,7 @@ UINT WINAPI IOCP_Client::DealThread(LPVOID arg_list)
 
             case MSG_LOGON_FAILURE:
             {
-                printf("[IOCP] Logon failed\n");
+                printf("#Log: Logon failed\n");
                 closesocket(p_per_link_info->socket);
                 CloseHandle(p_this->h_iocp);
                 p_this->logon_status = FALSE;
@@ -310,6 +310,8 @@ OPSTATUS IOCP_Client::CompletePortStart(string address, INT port)
             return OP_FAILED;
         }
     }
+
+    PostRecv(p_ser_link_info, 0, sizeof(PACKET_HEADER));
 
     return OP_SUCCESS;
 }

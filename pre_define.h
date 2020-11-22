@@ -43,6 +43,7 @@ typedef struct _CLIENT_INFO
 {
     ULONG addr;
     ULONG port;
+	CHAR  account[128];
     // ...
 } CLIENT_INFO, *PCLIENT_INFO;
 

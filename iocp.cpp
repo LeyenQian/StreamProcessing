@@ -118,6 +118,41 @@ OPSTATUS IOCP::AcceptClient(PPER_IO_INFO p_per_io_Info)
 }
 
 
+BOOL IOCP::PacketSend(PPER_LINK_INFO p_per_link_info)
+{
+    ULONG u_send = 0;
+    ULONG u_flag = 0;
+
+    ZeroMemory(&p_per_link_info->p_per_io_info[1].overlapped, sizeof(OVERLAPPED));
+
+    EnterCriticalSection(&SendCriticalSection);
+    ULONG uRet = WSASend(p_per_link_info->socket, &p_per_link_info->p_per_io_info[1].w_buf, 1, &u_send, u_flag, &p_per_link_info->p_per_io_info[1].overlapped, NULL);
+    if (uRet == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
+    {
+        printf("#Err: send data package asynchronously failed\n");
+        LeaveCriticalSection(&SendCriticalSection);
+
+        return FALSE;
+    }
+    LeaveCriticalSection(&SendCriticalSection);
+
+    return TRUE;
+}
+
+
+BOOL  IOCP::LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status)
+{
+    ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
+
+    ((PPACKET_HEADER)p_per_link_info->p_per_io_info[1].buffer)->comm_code = status;
+    ((PPACKET_HEADER)p_per_link_info->p_per_io_info[1].buffer)->packet_len = sizeof(PACKET_HEADER);
+
+    p_per_link_info->p_per_io_info[1].w_buf.len = sizeof(PACKET_HEADER);
+
+    return PacketSend(p_per_link_info);
+}
+
+
 UINT WINAPI IOCP::DealThread( LPVOID arg_list )
 {
     IOCP* p_this = static_cast<IOCP *>(arg_list);
@@ -160,7 +195,29 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
                     p_this->PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER) );
                     break;
                 }
+                case MSG_LOGON:
+                {
+                    p_per_link_info->state_machine = SM_FULL;
+                    p_per_link_info->heartbeat_info.hold_time = 240;
 
+                    strcpy_s(p_per_link_info->client_info.account, ((PPACKET_LOGON)p_per_io_Info->buffer)->account);
+
+                    p_this->LogonStatus(p_per_link_info, MSG_LOGON_SUCCESS);
+                    printf("#Log: logon succeed\nAccount: %s\n", p_per_link_info->client_info.account);
+                    p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
+                    break;
+                }
+
+                case MSG_LOGOUT:
+                {
+                    printf("#Log: Account:  %s  logged out\n", p_per_link_info->client_info.account);
+
+                    p_this->p_DisconnectEx(p_per_link_info->socket, NULL, TF_REUSE_SOCKET, 0);
+                    p_per_link_info->free_flag = LINK_FREE;
+                    p_per_link_info->state_machine = SM_IDLE;
+                    p_per_link_info->heartbeat_info.hold_time = 240;
+                    break;
+                }
                 default:
                 {
                     p_per_link_info->state_machine = SM_FULL;
@@ -219,6 +276,7 @@ OPSTATUS IOCP::InitialEnvironment()
         return OP_FAILED;
     }
 
+    InitializeCriticalSection(&SendCriticalSection);
     return OP_SUCCESS;
 }
 

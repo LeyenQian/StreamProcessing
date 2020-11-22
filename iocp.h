@@ -35,12 +35,16 @@ private:
 
 public:
     HANDLE h_iocp = NULL;
+    CRITICAL_SECTION SendCriticalSection = { 0 };
 
     IOCP();
     ~IOCP();
 
     static UINT WINAPI DealThread(LPVOID arg_list);
     static UINT WINAPI AgingThread(LPVOID arg_list);
+
+    BOOL PacketSend(PPER_LINK_INFO p_per_link_info);
+    BOOL LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status);
 
     OPSTATUS InitialEnvironment();
     OPSTATUS CompletePortStart( string address, INT port );
