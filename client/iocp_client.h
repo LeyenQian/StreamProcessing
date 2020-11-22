@@ -22,9 +22,6 @@ class IOCP_Client
 {
 private:
     HANDLE h_thread[2] = { 0 };
-    PPER_IO_INFO p_acce_io_info = NULL;
-    PPER_LINK_INFO p_ser_link_info = NULL;
-
     // dynamically load functions
     LPFN_ACCEPTEX p_AcceptEx = NULL;
     LPFN_DISCONNECTEX p_DisconnectEx = NULL;
@@ -32,12 +29,21 @@ private:
 
 public:
     HANDLE h_iocp = NULL;
+    BOOL logon_status = FALSE;
+    BOOL app_quit_flag = FALSE;
+    PPER_IO_INFO p_acce_io_info = NULL;
+    PPER_LINK_INFO p_ser_link_info = NULL;
+    CRITICAL_SECTION SendCriticalSection = { 0 };
 
     IOCP_Client();
     ~IOCP_Client();
 
-    //static UINT WINAPI DealThread(LPVOID ArgList);
-    //static UINT WINAPI AgingThread(LPVOID ArgList);
+    static UINT WINAPI DealThread(LPVOID ArgList);
+    static UINT WINAPI HeartBeatThread(LPVOID ArgList);
+
+    BOOL HeartBeat(PPER_LINK_INFO p_per_link_info);
+    BOOL Logon(PPER_LINK_INFO p_per_link_info, PCHAR account);
+    BOOL PacketSend(PPER_LINK_INFO p_per_link_info);
 
     OPSTATUS InitWinSock();
     OPSTATUS InitialEnvironment();
