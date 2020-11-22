@@ -35,6 +35,10 @@ typedef INT OPSTATUS;
 #define SM_FAIL             0x3
 
 #define MSG_HEART_BEAT		0x1
+#define MSG_LOGON			0x2
+#define MSG_LOGOUT			0x3
+#define MSG_LOGON_SUCCESS	0x4
+#define MSG_LOGON_FAILURE	0x5
 
 
 typedef struct _PER_IO_INFO
