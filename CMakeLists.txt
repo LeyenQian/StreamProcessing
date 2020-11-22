@@ -1,19 +1,16 @@
 
-
 IF(WIN32)
     ADD_COMPILE_DEFINITIONS(_CRT_SECURE_NO_WARNINGS WIN32_LEAN_AND_MEAN)
     ADD_COMPILE_DEFINITIONS(_WINSOCK_DEPRECATED_NO_WARNINGS)
 ENDIF()
 
-if (MSVC)
-    add_compile_options(/W0 /WX)
-else()
-    add_compile_options(-Wall -Wextra -pedantic -Werror)
-endif()
-endif()
+IF(MSVC)
+    ADD_COMPILE_OPTIONS(/W0 /WX)
+ELSE()
+    ADD_COMPILE_OPTIONS(-Wall -Wextra -pedantic -Werror)
+ENDIF()
 
 set(ENABLE_TEST ON)
-
 
 IF(ENABLE_TEST)
   ADD_SUBDIRECTORY(client)
