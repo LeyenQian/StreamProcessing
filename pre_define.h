@@ -95,5 +95,13 @@ typedef struct _PACKET_HEADER
 	// ...
 } PACKET_HEADER, *PPACKET_HEADER;
 
+
+typedef struct _PACKET_LOGON
+{
+	PACKET_HEADER packet_header;
+	CHAR account[128];
+	// ...
+} PACKET_LOGON, * PPACKET_LOGON;
+
 void RedisConnector_Test();
 #endif
