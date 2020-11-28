@@ -207,7 +207,6 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
                     p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
                     break;
                 }
-
                 case MSG_LOGOUT:
                 {
                     printf("#Log: Account:  %s  logged out\n", p_per_link_info->client_info.account);
@@ -216,6 +215,26 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
                     p_per_link_info->free_flag = LINK_FREE;
                     p_per_link_info->state_machine = SM_IDLE;
                     p_per_link_info->heartbeat_info.hold_time = 240;
+                    break;
+                }
+                case MSG_GEO_LOCATION:
+                {
+                    // only for test purpose
+                    string test_cmd = "GEOADD sample 1 1 ";
+                    test_cmd.append(to_string(rand()));
+                    
+                    p_this->p_redis->ExecuteCommand(test_cmd);
+                    p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
+                    break;
+                }
+                case MSG_EVENT:
+                {
+                    // only for test purpose
+                    string test_cmd = "TS.ADD sample:3:11 * ";
+                    test_cmd.append(to_string(rand()));
+
+                    p_this->p_redis->ExecuteCommand(test_cmd);
+                    p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
                     break;
                 }
                 default:
@@ -360,6 +379,10 @@ OPSTATUS IOCP::CompletePortStart( string address, INT port )
 IOCP::IOCP()
 {
     InitialEnvironment();
+    printf("------------------- Test Redis -------------------\n");
+    p_redis = new RedisConnector("192.168.1.140", 6379);
+    p_redis->Connect();
+    p_redis->TestRedis();
 }
 
 
@@ -373,11 +396,8 @@ IOCP::~IOCP()
 
 int main(int argc, char const *argv[])
 {
-    printf("------------------- Test Redis -------------------\n");
-    RedisConnector_Test();
-
-    printf("\n\n------------------- Test  IOCP -------------------\n");
     IOCP server;
-    server.CompletePortStart("127.0.0.1", 9001);
+    printf("\n\n------------------- Start  IOCP -------------------\n");
+    server.CompletePortStart("127.0.0.1", 9003);
     return 0;
 }

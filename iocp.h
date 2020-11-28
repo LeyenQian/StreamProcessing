@@ -27,6 +27,7 @@ private:
     PPER_IO_INFO p_acce_io_info = NULL;
     PPER_LINK_INFO p_ser_link_info = NULL;
     LinkPool link_pool;
+    
 
     // dynamically load functions
     LPFN_ACCEPTEX p_AcceptEx = NULL;
@@ -36,6 +37,7 @@ private:
 public:
     HANDLE h_iocp = NULL;
     CRITICAL_SECTION SendCriticalSection = { 0 };
+    RedisConnector* p_redis = NULL;
 
     IOCP();
     ~IOCP();

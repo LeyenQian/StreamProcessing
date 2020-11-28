@@ -144,7 +144,7 @@ BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, I
     p_per_link_info = p_ser_link_info;
     ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
 
-    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->packet_header.comm_code = MSG_EVENT;
+    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->packet_header.comm_code = MSG_GEO_LOCATION;
     ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->packet_header.packet_len = sizeof(PACKET_GEO_LOCATION);
 
     ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->latitude = latitude;
@@ -370,8 +370,11 @@ int main(int argc, char const* argv[])
 {
     printf("\n\n------------------- Test  IOCP -------------------\n");
     IOCP_Client client;
-    client.CompletePortStart("127.0.0.1", 9001);
+    client.CompletePortStart("127.0.0.1", 9003);
     client.Logon(NULL, "test_client");
+    client.SendLocation(NULL, 1, 1, 255);
+    client.SendEvent(NULL, 1, 1);
+
     while (TRUE)
     {
         Sleep(1000);
