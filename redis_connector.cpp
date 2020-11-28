@@ -101,6 +101,10 @@ INT RedisConnector::Connect()
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 INT RedisConnector::ExecuteCommand(const string command)
 {
+    p_redis_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, command.c_str());
+    printf("Reply: %s\n", p_redis_reply->str);
+    freeReplyObject(p_redis_reply);
+
     return OP_SUCCESS;
 }
 
@@ -161,6 +165,7 @@ VOID RedisConnector::TestRedis()
             printf("%u) %s\n", j, p_redis_reply->element[j]->str);
         }
     }
+    freeReplyObject(p_redis_reply);
 }
 
 
