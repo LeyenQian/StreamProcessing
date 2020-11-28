@@ -38,6 +38,8 @@ typedef INT OPSTATUS;
 #define MSG_LOGOUT			0x3
 #define MSG_LOGON_SUCCESS	0x4
 #define MSG_LOGON_FAILURE	0x5
+#define MSG_GEO_LOCATION	0x6
+#define MSG_EVENT			0x7
 
 typedef struct _CLIENT_INFO
 {
@@ -103,6 +105,23 @@ typedef struct _PACKET_LOGON
 	CHAR account[128];
 	// ...
 } PACKET_LOGON, * PPACKET_LOGON;
+
+
+typedef struct _PACKET_GEO_LOCATION
+{
+	INT32 latitude;
+	INT32 longitude;
+	INT32 accuracy;
+	// ...
+}PACKET_GEO_LOCATION, *P_PACKET_GEO_LOCATION;
+
+
+typedef struct _PACKET_EVENT
+{
+	ULONG type;
+	ULONG data;
+};
+
 
 void RedisConnector_Test();
 #endif
