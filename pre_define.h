@@ -109,18 +109,20 @@ typedef struct _PACKET_LOGON
 
 typedef struct _PACKET_GEO_LOCATION
 {
+	PACKET_HEADER packet_header;
 	INT32 latitude;
 	INT32 longitude;
 	INT32 accuracy;
 	// ...
-}PACKET_GEO_LOCATION, *P_PACKET_GEO_LOCATION;
+}PACKET_GEO_LOCATION, *PPACKET_GEO_LOCATION;
 
 
 typedef struct _PACKET_EVENT
 {
+	PACKET_HEADER packet_header;
 	ULONG type;
 	ULONG data;
-};
+}PACKET_EVENT, *PPACKET_EVENT;
 
 
 void RedisConnector_Test();
