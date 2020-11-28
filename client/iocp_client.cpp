@@ -122,6 +122,41 @@ BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info, PCHAR account)
 }
 
 
+BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, ULONG event_data)
+{
+    p_per_link_info = p_ser_link_info;
+    ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
+
+    ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->packet_header.comm_code = MSG_EVENT;
+    ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->packet_header.packet_len = sizeof(PACKET_EVENT);
+
+    ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->type = event_type;
+    ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->data = event_data;
+
+    p_per_link_info->p_per_io_info[1].w_buf.len = sizeof(PACKET_EVENT);
+
+    return PacketSend(p_per_link_info);
+}
+
+
+BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, INT32 longitude, INT32 accuracy)
+{
+    p_per_link_info = p_ser_link_info;
+    ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
+
+    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->packet_header.comm_code = MSG_EVENT;
+    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->packet_header.packet_len = sizeof(PACKET_GEO_LOCATION);
+
+    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->latitude = latitude;
+    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->longitude = longitude;
+    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->accuracy = accuracy;
+
+    p_per_link_info->p_per_io_info[1].w_buf.len = sizeof(PACKET_GEO_LOCATION);
+
+    return PacketSend(p_per_link_info);
+}
+
+
 UINT WINAPI IOCP_Client::HeartBeatThread(LPVOID arg_list)
 {
     IOCP_Client* p_this = static_cast<IOCP_Client*>(arg_list);
