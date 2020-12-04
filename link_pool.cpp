@@ -14,6 +14,14 @@ LinkPool::~LinkPool()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   LinkPool::InitWinSock
+
+  Summary:  initial socket library (WSASocket)
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS LinkPool::InitWinSock()
 {
     WSAData wsa_data = {0};
@@ -35,6 +43,16 @@ OPSTATUS LinkPool::InitWinSock()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   LinkPool::LinkPoolBuild
+
+  Summary:  allocate link info structures
+
+  Modifies: [p_link_pool_manage, CriticalSection]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS LinkPool::LinkPoolBuild()
 {
     if ( InitWinSock() != OP_SUCCESS )
@@ -86,6 +104,16 @@ OPSTATUS LinkPool::LinkPoolBuild()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   LinkPool::LinkPoolDestroy
+
+  Summary:  free link info structures
+
+  Modifies: [p_link_pool_manage, CriticalSection]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS LinkPool::LinkPoolDestroy()
 {
     EnterCriticalSection(&CriticalSection);
@@ -104,6 +132,16 @@ OPSTATUS LinkPool::LinkPoolDestroy()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   LinkPool::LinkPoolAlloc
+
+  Summary:  retrieve one free link info structure for new connection
+
+  Modifies: [p_link_pool_manage]
+
+  Returns:  PPER_LINK_INFO
+              free I/O info structure
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 PPER_LINK_INFO LinkPool::LinkPoolAlloc()
 {
     PPER_LINK_INFO p_per_link_info = NULL;
@@ -141,6 +179,16 @@ PPER_LINK_INFO LinkPool::LinkPoolAlloc()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   LinkPool::LinkPoolCheck
+
+  Summary:  check & manage connection status
+
+  Args:     LPFN_DISCONNECTEX p_DisconnectEx
+              function used to free socket connection
+
+  Modifies: [p_link_pool_manage]
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 VOID LinkPool::LinkPoolCheck(LPFN_DISCONNECTEX p_DisconnectEx)
 {
     for ( ULONG j = 0; j < MAX_LINK_NUM; ++ j )
