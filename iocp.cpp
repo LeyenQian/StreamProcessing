@@ -1,22 +1,18 @@
-/*+===================================================================
-  File:      iocp.cpp
-
-  Summary:   Brief summary of the file contents and purpose.
-
-  Classes:   Classes declared or used (in source files).
-
-  Functions: Functions exported (in source files).
-
-  Origin:    Indications of where content may have come from. This
-             is not a change history but rather a reference to the
-             editor-inheritance behind the content or other
-             indications about the origin of the source.
-
-  Copyright and Legal notices.
-  Copyright and Legal notices.
-===================================================================+*/
 #include "iocp.h"
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::PostAcceptEx
+
+  Summary:  accept the connection, and allocate I/O info structure
+
+  Args:     PPER_IO_INFO p_acce_io_info
+              I/O info structure that descripes the connection
+
+  Modifies: [p_acce_io_info, link_pool]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
 {
     ULONG u_bytes_ret = 0;
@@ -37,6 +33,19 @@ OPSTATUS IOCP::PostAcceptEx( PPER_IO_INFO p_acce_io_info )
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::AgingThread
+
+  Summary:  manage connections status, close overtimed connections
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP instance
+
+  Modifies: [link_pool]
+
+  Returns:  UINT
+              thread termination status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP::AgingThread( LPVOID arg_list )
 {
     IOCP* p_this = static_cast<IOCP *>(arg_list);
@@ -50,6 +59,27 @@ UINT WINAPI IOCP::AgingThread( LPVOID arg_list )
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::PostRecv
+
+  Summary:  post receive on the socket
+            return only after receive the size of package header
+
+  Args:     PPER_IO_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            ULONG buff_offset
+              indicate where the newly received data should be written to
+
+            ULONG buff_len
+              indicate the length of data that suppoused to receive,
+              function can return without receiving enough data
+
+  Modifies: [p_per_link_info]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::PostRecv( PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len )
 {
     ULONG u_flag = 0;
@@ -63,13 +93,30 @@ OPSTATUS IOCP::PostRecv( PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULON
         WSAGetLastError() != WSA_IO_PENDING )
     {
         printf( "#Err: post receive failed, discard connection\n" );
-        return FALSE;
+        return OP_FAILED;
     }
 
-    return TRUE;
+    return OP_SUCCESS;
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::IsRecvFinish
+
+  Summary:  check whether data is received completely
+            if not, post receive on the socket
+
+  Args:     PPER_IO_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            ULONG actual_trans
+              indicate the amount of data has been received so far
+
+  Modifies: [p_per_link_info]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::IsRecvFinish( PPER_LINK_INFO p_per_link_info, ULONG actual_trans )
 {
     // package length cannot bigger than buffer 
@@ -79,7 +126,7 @@ OPSTATUS IOCP::IsRecvFinish( PPER_LINK_INFO p_per_link_info, ULONG actual_trans 
         p_per_link_info->p_per_io_info[0].curr_data_len += actual_trans;
         PostRecv( p_per_link_info, actual_trans, p_per_link_info->p_per_io_info[0].w_buf.len - actual_trans );
         p_per_link_info->p_per_io_info[0].post_recv_times ++;
-        return FALSE;
+        return OP_FAILED;
     }
     else
     {
@@ -93,13 +140,27 @@ OPSTATUS IOCP::IsRecvFinish( PPER_LINK_INFO p_per_link_info, ULONG actual_trans 
         // not completely, post receive
         PostRecv( p_per_link_info, p_per_link_info->p_per_io_info[0].curr_data_len, ((PPACKET_HEADER)( p_per_link_info->p_per_io_info[0].buffer ))->packet_len - p_per_link_info->p_per_io_info[0].curr_data_len );
         p_per_link_info->p_per_io_info[0].post_recv_times ++;
-        return FALSE;
+        return OP_FAILED;
     }
 
-    return TRUE;
+    return OP_SUCCESS;
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::AcceptClient
+
+  Summary:  accept new connection
+            post receive on the new connection
+
+  Args:     PPER_IO_INFO p_per_io_Info
+              I/O info structure that descripes the connection
+
+  Modifies: [p_per_io_Info]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::AcceptClient(PPER_IO_INFO p_per_io_Info)
 {
     PPER_LINK_INFO p_per_link_info = *(PPER_LINK_INFO *)p_per_io_Info->buffer;
@@ -108,16 +169,30 @@ OPSTATUS IOCP::AcceptClient(PPER_IO_INFO p_per_io_Info)
     {
         printf( "#Err: accept client failed\n" );
         p_DisconnectEx( p_per_link_info->socket, NULL, TF_REUSE_SOCKET, 0 );
+        return OP_FAILED;
     }
 
     p_per_link_info->state_machine = SM_FULL;
     PostAcceptEx(p_per_io_Info);
     PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER) );
 
-    return TRUE;
+    return OP_SUCCESS;
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::PacketSend
+
+  Summary:  asynchronously send data that stored in the send buffer
+
+  Args:     PPER_IO_INFO p_per_io_Info
+              I/O info structure that descripes the connection
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP::PacketSend(PPER_LINK_INFO p_per_link_info)
 {
     ULONG u_send = 0;
@@ -140,7 +215,23 @@ BOOL IOCP::PacketSend(PPER_LINK_INFO p_per_link_info)
 }
 
 
-BOOL  IOCP::LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status)
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::LogonStatus
+
+  Summary:  nodify client the logon status
+
+  Args:     PPER_IO_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            ULONG status
+              logon status
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+BOOL IOCP::LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status)
 {
     ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
 
@@ -153,6 +244,19 @@ BOOL  IOCP::LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status)
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::DealThread
+
+  Summary:  thread used to accept connection and process messages
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP instance
+
+  Modifies: [link_pool, p_redis]
+
+  Returns:  UINT
+              thread termination status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP::DealThread( LPVOID arg_list )
 {
     IOCP* p_this = static_cast<IOCP *>(arg_list);
@@ -175,7 +279,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
         else if(p_per_io_Info->op_type == IO_RECV )
         {
             // break, if the package received is not complete
-            if ( !p_this->IsRecvFinish( p_per_link_info, actual_trans ) ) continue;
+            if ( p_this->IsRecvFinish( p_per_link_info, actual_trans ) == OP_FAILED ) continue;
 
             // receive completed. prepare for next package receiving
             p_per_link_info->p_per_io_info[0].w_buf.len = sizeof(PACKET_HEADER);
@@ -251,6 +355,19 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::InitialEnvironment
+
+  Summary:  initial linkpool for I/O info structure allocation
+            initial server I/O info structure
+            dynamically load socket related functions from library
+
+  Modifies: [link_pool, p_ser_link_info, p_acce_io_info, SendCriticalSection
+             p_AcceptEx, p_DisconnectEx, p_GetAcceptExSockAddrs]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::InitialEnvironment()
 {
     // initial link pool
@@ -300,6 +417,20 @@ OPSTATUS IOCP::InitialEnvironment()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::CompletePortStart
+
+  Summary:  start listening on the given address and port
+            start 10 IOCP threads for network events processing
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP instance
+
+  Modifies: [link_pool, p_redis]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::CompletePortStart( string address, INT port )
 {
     SOCKADDR_IN sock_addr = {0};
