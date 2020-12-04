@@ -266,6 +266,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
     PPER_IO_INFO p_per_io_Info = NULL;
     PPER_LINK_INFO p_per_link_info = NULL;
 
+    // command pattern
     while( TRUE )
     {
         GetQueuedCompletionStatus( p_this->h_iocp, &actual_trans, (PULONG_PTR)&p_per_link_info, &p_overlapped, INFINITE );
@@ -370,7 +371,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::InitialEnvironment()
 {
-    // initial link pool
+    // initial link pool (object pool pattern)
     link_pool.LinkPoolBuild();
 
     // allocate link info for server
@@ -433,6 +434,7 @@ OPSTATUS IOCP::InitialEnvironment()
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::CompletePortStart( string address, INT port )
 {
+    // facade pattern
     SOCKADDR_IN sock_addr = {0};
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_port = htons(port);
