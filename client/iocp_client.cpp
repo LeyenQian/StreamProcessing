@@ -1,5 +1,14 @@
 #include "iocp_client.h"
 
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::InitWinSock
+
+  Summary:  initial socket library (WSASocket)
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP_Client::InitWinSock()
 {
     WSAData wsa_data = { 0 };
@@ -21,6 +30,27 @@ OPSTATUS IOCP_Client::InitWinSock()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::PostRecv
+
+  Summary:  post receive on the socket
+            return only after receive the size of package header
+
+  Args:     PPER_IO_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            ULONG buff_offset
+              indicate where the newly received data should be written to
+
+            ULONG buff_len
+              indicate the length of data that suppoused to receive,
+              function can return without receiving enough data
+
+  Modifies: [p_per_link_info]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP_Client::PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len)
 {
     ULONG u_flag = 0;
@@ -41,6 +71,23 @@ OPSTATUS IOCP_Client::PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::IsRecvFinish
+
+  Summary:  check whether data is received completely
+            if not, post receive on the socket
+
+  Args:     PPER_IO_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            ULONG actual_trans
+              indicate the amount of data has been received so far
+
+  Modifies: [p_per_link_info]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP_Client::IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans)
 {
     // package length cannot bigger than buffer 
@@ -71,6 +118,19 @@ OPSTATUS IOCP_Client::IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::PacketSend
+
+  Summary:  asynchronously send data that stored in the send buffer
+
+  Args:     PPER_IO_INFO p_per_io_Info
+              I/O info structure that descripes the connection
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP_Client::PacketSend(PPER_LINK_INFO p_per_link_info)
 {
     ULONG u_send = 0;
@@ -93,6 +153,19 @@ BOOL IOCP_Client::PacketSend(PPER_LINK_INFO p_per_link_info)
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::HeartBeat
+
+  Summary:  notify server that client is active
+
+  Args:     PPER_LINK_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP_Client::HeartBeat(PPER_LINK_INFO p_per_link_info)
 {
     ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
@@ -106,6 +179,21 @@ BOOL IOCP_Client::HeartBeat(PPER_LINK_INFO p_per_link_info)
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::Logon
+
+  Summary:  send server identity information
+
+  Args:     PPER_LINK_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            PCHAR account
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info, PCHAR account)
 {
     p_per_link_info = p_ser_link_info;
@@ -122,6 +210,22 @@ BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info, PCHAR account)
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::SendEvent
+
+  Summary:  send server event information
+
+  Args:     PPER_LINK_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            ULONG event_type
+            ULONG event_data
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, ULONG event_data)
 {
     p_per_link_info = p_ser_link_info;
@@ -139,6 +243,23 @@ BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, UL
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::SendLocation
+
+  Summary:  send server geolocation information
+
+  Args:     PPER_LINK_INFO p_per_link_info
+              I/O info structure that descripes the connection
+
+            INT32 latitude
+            INT32 longitude
+            INT32 accuracy
+
+  Modifies: [p_per_link_info]
+
+  Returns:  BOOL
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, INT32 longitude, INT32 accuracy)
 {
     p_per_link_info = p_ser_link_info;
@@ -157,6 +278,17 @@ BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, I
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::HeartBeatThread
+
+  Summary:  thread used to constantly notify server
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP_Client instance
+
+  Returns:  UINT
+              thread termination status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP_Client::HeartBeatThread(LPVOID arg_list)
 {
     IOCP_Client* p_this = static_cast<IOCP_Client*>(arg_list);
@@ -196,6 +328,19 @@ UINT WINAPI IOCP_Client::HeartBeatThread(LPVOID arg_list)
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::DealThread
+
+  Summary:  thread used to accept connection and process messages
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP_Client instance
+
+  Modifies: [link_pool, p_redis]
+
+  Returns:  UINT
+              thread termination status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP_Client::DealThread(LPVOID arg_list)
 {
     IOCP_Client* p_this = static_cast<IOCP_Client*>(arg_list);
@@ -266,6 +411,16 @@ UINT WINAPI IOCP_Client::DealThread(LPVOID arg_list)
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::InitialEnvironment
+
+  Summary:  initial client I/O info structure
+
+  Modifies:  [p_ser_link_info, p_acce_io_info]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP_Client::InitialEnvironment()
 {
     // allocate link info for server
@@ -304,6 +459,21 @@ OPSTATUS IOCP_Client::InitialEnvironment()
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP_Client::CompletePortStart
+
+  Summary:  connect to the remote server with the given address & port
+            create I/O completion port on socket
+            create one IOCP thread for network events processing
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP instance
+
+  Modifies: [h_iocp]
+
+  Returns:  OPSTATUS
+              operation status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP_Client::CompletePortStart(string address, INT port)
 {
     SOCKADDR_IN sock_addr = { 0 };

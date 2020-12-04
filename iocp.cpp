@@ -426,7 +426,7 @@ OPSTATUS IOCP::InitialEnvironment()
   Args:     LPVOID arg_list
               contain the "this" pointer of IOCP instance
 
-  Modifies: [link_pool, p_redis]
+  Modifies: [link_pool, p_redis, h_iocp]
 
   Returns:  OPSTATUS
               operation status
