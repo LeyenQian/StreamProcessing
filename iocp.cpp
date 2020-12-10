@@ -335,7 +335,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
                 case MSG_EVENT:
                 {
                     // only for test purpose
-                    string test_cmd = "TS.ADD sample:3:11 * ";
+                    string test_cmd = "TS.CREATE temperature:3:11 RETENTION 60 LABELS sensor_id 2 area_id ";
                     test_cmd.append(to_string(rand()));
 
                     p_this->p_redis->ExecuteCommand(test_cmd);
