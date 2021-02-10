@@ -9,6 +9,9 @@
 #include <Iphlpapi.h>
 #include <iostream>
 #include <string>
+#include "../rapidjson/document.h"
+#include "../rapidjson/writer.h"
+#include "../rapidjson/stringbuffer.h"
 using namespace std;
 
 #pragma comment(lib, "ws2_32.lib")
