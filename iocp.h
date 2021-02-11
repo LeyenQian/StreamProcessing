@@ -9,6 +9,7 @@ private:
     PPER_IO_INFO p_acce_io_info = NULL;
     PPER_LINK_INFO p_ser_link_info = NULL;
     LinkPool link_pool;
+    Document config;
     
     LPFN_ACCEPTEX p_AcceptEx = NULL;
     LPFN_DISCONNECTEX p_DisconnectEx = NULL;

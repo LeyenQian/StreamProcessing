@@ -266,7 +266,6 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
     PPER_IO_INFO p_per_io_Info = NULL;
     PPER_LINK_INFO p_per_link_info = NULL;
 
-    // command pattern
     while( TRUE )
     {
         GetQueuedCompletionStatus( p_this->h_iocp, &actual_trans, (PULONG_PTR)&p_per_link_info, &p_overlapped, INFINITE );
@@ -371,7 +370,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 OPSTATUS IOCP::InitialEnvironment()
 {
-    // initial link pool (object pool pattern)
+    // initial link pool
     link_pool.LinkPoolBuild();
 
     // allocate link info for server
@@ -414,6 +413,23 @@ OPSTATUS IOCP::InitialEnvironment()
     }
 
     InitializeCriticalSection(&SendCriticalSection);
+
+    // load config file
+    ifstream ifs("config.json");
+    if (ifs.is_open())
+    {
+        stringstream sstr;
+        sstr << ifs.rdbuf();
+        ifs.close();
+
+        config.Parse(sstr.str().c_str());
+    }
+    else
+    {
+        printf("#Err: unable to load config file <config.json>\n");
+        return OP_FAILED;
+    }
+
     return OP_SUCCESS;
 }
 
