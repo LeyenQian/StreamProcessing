@@ -455,6 +455,23 @@ OPSTATUS IOCP_Client::InitialEnvironment()
     p_acce_io_info[1].w_buf.buf = p_acce_io_info[1].buffer;
 
     InitializeCriticalSection(&SendCriticalSection);
+
+    // load config file
+    ifstream ifs("config.json");
+    if (ifs.is_open())
+    {
+        stringstream sstr;
+        sstr << ifs.rdbuf();
+        ifs.close();
+
+        config.Parse(sstr.str().c_str());
+    }
+    else
+    {
+        printf("#Err: unable to load config file <config.json>\n");
+        return OP_FAILED;
+    }
+
     return OP_SUCCESS;
 }
 

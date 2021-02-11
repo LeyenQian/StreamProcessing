@@ -26,6 +26,7 @@ private:
     LPFN_ACCEPTEX p_AcceptEx = NULL;
     LPFN_DISCONNECTEX p_DisconnectEx = NULL;
     LPFN_GETACCEPTEXSOCKADDRS p_GetAcceptExSockAddrs = NULL;
+    Document config;
 
 public:
     HANDLE h_iocp = NULL;

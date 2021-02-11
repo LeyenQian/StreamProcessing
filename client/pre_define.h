@@ -8,10 +8,13 @@
 #include <Windows.h>
 #include <Iphlpapi.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include "../rapidjson/document.h"
 #include "../rapidjson/writer.h"
 #include "../rapidjson/stringbuffer.h"
+using namespace rapidjson;
 using namespace std;
 
 #pragma comment(lib, "ws2_32.lib")
