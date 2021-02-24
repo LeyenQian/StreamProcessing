@@ -1,3 +1,6 @@
 {
-  "device_id" :  "AB1345ED79"
+  "server_address": "127.0.0.1",
+  "server_port": 9003,
+
+  "device_id": "AB1345ED79"
 }

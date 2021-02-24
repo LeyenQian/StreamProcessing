@@ -1,4 +1,10 @@
 {
+  "server_address": "127.0.0.1",
+  "server_port": 9003,
+
+  "redis_address": "leyen.synology.me",
+  "redis_port": 6379,
+
   "device_ids": [
     "AB1345ED79",
     "AB1345ED7A",
@@ -8,5 +14,19 @@
     "AB1345ED7E",
     "AB1345ED7F",
     "AB1345ED80"
-  ]
+  ],
+
+  "available_unit": [ "m", "km", "ft", "mi" ],
+
+  "geofence": {
+    "latitude": "40.00699",
+    "longitude": "-105.26284",
+    "radius": "9000 ft"
+  },
+
+  "detection": {
+    "latitude": "40.00699",
+    "longitude": "-105.26284",
+    "radius": "250000 ft"
+  }
 }

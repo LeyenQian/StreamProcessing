@@ -5,7 +5,7 @@
 class IOCP
 {
 private:
-    HANDLE h_thread[11]  = {0};
+    HANDLE h_thread[13]  = {0};
     PPER_IO_INFO p_acce_io_info = NULL;
     PPER_LINK_INFO p_ser_link_info = NULL;
     LinkPool link_pool;
@@ -25,6 +25,8 @@ public:
 
     static UINT WINAPI DealThread(LPVOID arg_list);
     static UINT WINAPI AgingThread(LPVOID arg_list);
+    static UINT WINAPI GenerateGeospatialReportThread(LPVOID arg_list);
+    static UINT WINAPI GenerateEventReportThread(LPVOID arg_list);
 
     BOOL PacketSend(PPER_LINK_INFO p_per_link_info);
     BOOL LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status);
@@ -35,4 +37,6 @@ public:
     OPSTATUS IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans);
     OPSTATUS PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len);
     OPSTATUS PostAcceptEx( PPER_IO_INFO p_acce_io_info );
+    BOOL InitialRedis();
+    BOOL CheckDeviceID(const char* device_id);
 };

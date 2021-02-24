@@ -43,10 +43,10 @@ public:
     static UINT WINAPI HeartBeatThread(LPVOID ArgList);
 
     BOOL HeartBeat(PPER_LINK_INFO p_per_link_info);
-    BOOL Logon(PPER_LINK_INFO p_per_link_info, PCHAR account);
+    BOOL Logon(PPER_LINK_INFO p_per_link_info);
     BOOL PacketSend(PPER_LINK_INFO p_per_link_info);
     BOOL SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, ULONG event_data);
-    BOOL SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, INT32 longitude, INT32 accuracy);
+    BOOL SendLocation(PPER_LINK_INFO p_per_link_info, double latitude, double longitude);
 
     OPSTATUS InitWinSock();
     OPSTATUS InitialEnvironment();

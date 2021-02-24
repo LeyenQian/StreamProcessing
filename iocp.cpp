@@ -289,67 +289,146 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
             // do different thing for different communication code
             switch( ((PPACKET_HEADER)p_per_io_Info->buffer)->comm_code )
             {
-                case MSG_HEART_BEAT:
-                {
-                    if ( p_per_link_info->state_machine == SM_FULL || p_per_link_info->state_machine == SM_OVER )
-                    {
-                        p_per_link_info->state_machine = SM_FULL;
-                        p_per_link_info->heartbeat_info.hold_time = 240;
-                    }
-                    p_this->PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER) );
-                    break;
-                }
                 case MSG_LOGON:
                 {
-                    p_per_link_info->state_machine = SM_FULL;
-                    p_per_link_info->heartbeat_info.hold_time = 240;
+                    if (p_this->CheckDeviceID(((PPACKET_LOGON)p_per_io_Info->buffer)->account))
+                    {
+                        printf("#Log: logon succeed\nDevice: %s\n", ((PPACKET_LOGON)p_per_io_Info->buffer)->account);
+                        strcpy_s(p_per_link_info->client_info.account, ((PPACKET_LOGON)p_per_io_Info->buffer)->account);
+                        p_this->LogonStatus(p_per_link_info, MSG_LOGON_SUCCESS);
+                    }
+                    else
+                    {
+                        printf("#Log: logon failed\nDevice: %s\n", ((PPACKET_LOGON)p_per_io_Info->buffer)->account);
+                        p_this->LogonStatus(p_per_link_info, MSG_LOGON_FAILURE);
+                    }
 
-                    strcpy_s(p_per_link_info->client_info.account, ((PPACKET_LOGON)p_per_io_Info->buffer)->account);
-
-                    p_this->LogonStatus(p_per_link_info, MSG_LOGON_SUCCESS);
-                    printf("#Log: logon succeed\nAccount: %s\n", p_per_link_info->client_info.account);
-                    p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
                     break;
                 }
                 case MSG_LOGOUT:
                 {
-                    printf("#Log: Account:  %s  logged out\n", p_per_link_info->client_info.account);
+                    printf("#Log: Device:  %s  logged out\n", p_per_link_info->client_info.account);
 
                     p_this->p_DisconnectEx(p_per_link_info->socket, NULL, TF_REUSE_SOCKET, 0);
                     p_per_link_info->free_flag = LINK_FREE;
                     p_per_link_info->state_machine = SM_IDLE;
-                    p_per_link_info->heartbeat_info.hold_time = 240;
-                    break;
+                    p_per_link_info->heartbeat_info.hold_time = 0;
+                    continue;
                 }
                 case MSG_GEO_LOCATION:
                 {
-                    // only for test purpose
-                    string test_cmd = "GEOADD sample 1 1 ";
-                    test_cmd.append(to_string(rand()));
-                    
-                    p_this->p_redis->ExecuteCommand(test_cmd);
-                    p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
+                    Value& detection = p_this->config["detection"];
+                    string range = detection["radius"].GetString();
+                    stringstream location;
+                    location << detection["longitude"].GetString() << " " << detection["latitude"].GetString();
+
+                    BOOL prev_status = p_this->p_redis->DetectGeofence(location.str(), range, string(p_per_link_info->client_info.account));
+                    PPACKET_GEO_LOCATION p_location = (PPACKET_GEO_LOCATION)p_per_io_Info->buffer;
+                    p_this->p_redis->InsertGeospatial(p_location, string(p_per_link_info->client_info.account));
+                    BOOL curr_status = p_this->p_redis->DetectGeofence(location.str(), range, string(p_per_link_info->client_info.account));
+
+                    if (prev_status && !curr_status)
+                    {
+                        printf("Device %s is leaving the geofence\n", p_per_link_info->client_info.account);
+                    }
+                    else if (!prev_status && curr_status)
+                    {
+                        printf("Device %s is entering the geofence\n", p_per_link_info->client_info.account);
+                    }
+
                     break;
                 }
                 case MSG_EVENT:
                 {
-                    // only for test purpose
-                    string test_cmd = "TS.CREATE temperature:3:11 RETENTION 60 LABELS sensor_id 2 area_id ";
-                    test_cmd.append(to_string(rand()));
-
-                    p_this->p_redis->ExecuteCommand(test_cmd);
-                    p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
+                    PPACKET_EVENT p_event = (PPACKET_EVENT)p_per_io_Info->buffer;
+                    printf("Event Type: %d\n", p_event->type);
+                    break;
+                }
+                case MSG_HEART_BEAT:
+                {
                     break;
                 }
                 default:
                 {
-                    p_per_link_info->state_machine = SM_FULL;
-                    p_per_link_info->heartbeat_info.hold_time = 240;
-                    p_this->PostRecv( p_per_link_info, 0, sizeof(PACKET_HEADER));
                     break;
                 }
             }
+
+            if (p_per_link_info->state_machine == SM_FULL || p_per_link_info->state_machine == SM_OVER)
+            {
+                p_per_link_info->state_machine = SM_FULL;
+                p_per_link_info->heartbeat_info.hold_time = 240;
+            }
+            p_this->PostRecv(p_per_link_info, 0, sizeof(PACKET_HEADER));
         }
+    }
+    return 0;
+}
+
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::GenerateGeospatialReportThread
+
+  Summary:  thread used to constantly check redis and generate report
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP instance
+
+  Modifies: [link_pool, p_redis]
+
+  Returns:  UINT
+              thread termination status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+UINT WINAPI IOCP::GenerateGeospatialReportThread( LPVOID arg_list )
+{
+    IOCP* p_this = static_cast<IOCP*>(arg_list);
+
+    while (TRUE)
+    {
+        Value& detection = p_this->config["detection"];
+        Value& device_ids = p_this->config["device_ids"];
+        string range = detection["radius"].GetString();
+        stringstream location;
+        location << detection["longitude"].GetString() << " " << detection["latitude"].GetString();
+
+        // Detect n objects within x feet of each other
+        // here we iterate all devices and find all devices that within x feet, which include itself.
+        string result_a;
+        p_this->p_redis->DetectObjectInRange(device_ids, range, result_a);
+
+        // Count objects passing a radius from a given position
+        string result_b;
+        p_this->p_redis->CountObjectInRange(location.str(), range, result_b);
+
+        // save report locally
+        ofstream ofs("geospatial_report.txt", ios::out | ios::trunc);
+        ofs << result_a << endl << endl << result_b;
+        ofs.close();
+
+        Sleep(5000);
+    }
+    return 0;
+}
+
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::GenerateEventReportThread
+
+  Summary:  thread used to constantly check redis and generate report
+
+  Args:     LPVOID arg_list
+              contain the "this" pointer of IOCP instance
+
+  Modifies: [link_pool, p_redis]
+
+  Returns:  UINT
+              thread termination status
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+UINT WINAPI IOCP::GenerateEventReportThread( LPVOID arg_list )
+{
+    while (TRUE)
+    {
+        Sleep(5000);
     }
     return 0;
 }
@@ -516,6 +595,22 @@ OPSTATUS IOCP::CompletePortStart( string address, INT port )
         }
     }
 
+    // create geospatial report thread
+    if ((h_thread[11] = (HANDLE)_beginthreadex(NULL, 0, IOCP::GenerateGeospatialReportThread, this, 0, NULL)) == NULL)
+    {
+        printf("#Err: start Geospatial Report thread failed\n");
+        return OP_FAILED;
+    }
+    printf("#Log: start Geospatial Report thread\n");
+
+    // create event report thread
+    if ((h_thread[12] = (HANDLE)_beginthreadex(NULL, 0, IOCP::GenerateEventReportThread, this, 0, NULL)) == NULL)
+    {
+        printf("#Err: start Event Report thread failed\n");
+        return OP_FAILED;
+    }
+    printf("#Log: start Event Report thread\n");
+
     while (TRUE)
     {
         Sleep(1000);
@@ -525,13 +620,63 @@ OPSTATUS IOCP::CompletePortStart( string address, INT port )
 }
 
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::InitialRedis
+
+  Summary:  based on the device_ids, create corresponding tables
+
+  Modifies: [p_redis]
+
+  Returns:  BOOL
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+BOOL IOCP::InitialRedis()
+{
+    Value& device_ids = config["device_ids"];
+    for (SizeType i = 0; i < device_ids.Size(); i++)
+    {
+        stringstream commands;
+        commands << "TS.CREATE event:" << device_ids[i].GetString() << " LABELS device_id " << device_ids[i].GetString();
+        
+        /*printf("%s\n", commands.str().c_str());*/
+    }
+
+    return TRUE;
+}
+
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   IOCP::CheckDeviceID
+
+  Summary:  check whether the incoming device is registered
+
+  Args:     const char* device_id
+
+  Modifies: []
+
+  Returns:  BOOL
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+BOOL IOCP::CheckDeviceID(const char* device_id)
+{
+    Value& device_ids = config["device_ids"];
+    for (SizeType i = 0; i < device_ids.Size(); i++)
+    {
+        if (strcmp(device_ids[i].GetString(), device_id) == 0)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+
 IOCP::IOCP()
 {
     InitialEnvironment();
     printf("------------------- Test Redis -------------------\n");
     p_redis = new RedisConnector("192.168.1.140", 6379);
     p_redis->Connect();
-    p_redis->TestRedis();
+    //p_redis->TestRedis();
 }
 
 
@@ -547,6 +692,7 @@ int main(int argc, char const *argv[])
 {
     IOCP server;
     printf("\n\n------------------- Start  IOCP -------------------\n");
+    server.InitialRedis();
     server.CompletePortStart("127.0.0.1", 9003);
     return 0;
 }

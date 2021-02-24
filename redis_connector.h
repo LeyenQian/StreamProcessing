@@ -59,6 +59,14 @@ public:
     ~RedisConnector();
     INT Connect();
     INT ExecuteCommand(const string command);
+
+    VOID InsertGeospatial(PPACKET_GEO_LOCATION p_location, const string device_id);
+    VOID InsertEvent(PPACKET_EVENT p_event);
+
+    VOID DetectObjectInRange(Value& device_ids, const string distance, string& result);
+    VOID CountObjectInRange(const string location, const string distance, string& result);
+    BOOL DetectGeofence(const string location, const string distance, const string device_id);
+
     VOID TestRedis();
 };
 

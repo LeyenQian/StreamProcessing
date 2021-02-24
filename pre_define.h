@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <iomanip>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
@@ -46,6 +47,14 @@ typedef INT OPSTATUS;
 #define MSG_LOGON_FAILURE	0x5
 #define MSG_GEO_LOCATION	0x6
 #define MSG_EVENT			0x7
+
+#define EVENT_A				0x1
+#define EVENT_B				0x2
+#define EVENT_C				0x3
+#define EVENT_D				0x4
+#define EVENT_E				0x5
+#define EVENT_F				0x6
+#define EVENT_A				0x7
 
 typedef struct _CLIENT_INFO
 {
@@ -116,9 +125,8 @@ typedef struct _PACKET_LOGON
 typedef struct _PACKET_GEO_LOCATION
 {
 	PACKET_HEADER packet_header;
-	INT32 latitude;
-	INT32 longitude;
-	INT32 accuracy;
+	double latitude;
+	double longitude;
 	// ...
 }PACKET_GEO_LOCATION, *PPACKET_GEO_LOCATION;
 

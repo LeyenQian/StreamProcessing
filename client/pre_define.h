@@ -48,6 +48,14 @@ typedef INT OPSTATUS;
 #define MSG_GEO_LOCATION	0x6
 #define MSG_EVENT			0x7
 
+#define EVENT_A				0x1
+#define EVENT_B				0x2
+#define EVENT_C				0x3
+#define EVENT_D				0x4
+#define EVENT_E				0x5
+#define EVENT_F				0x6
+#define EVENT_A				0x7
+
 typedef struct _PER_IO_INFO
 {
 	ULONG       op_type;
@@ -90,9 +98,8 @@ typedef struct _PACKET_LOGON
 typedef struct _PACKET_GEO_LOCATION
 {
 	PACKET_HEADER packet_header;
-	INT32 latitude;
-	INT32 longitude;
-	INT32 accuracy;
+	double latitude;
+	double longitude;
 	// ...
 }PACKET_GEO_LOCATION, * PPACKET_GEO_LOCATION;
 
@@ -104,5 +111,44 @@ typedef struct _PACKET_EVENT
 	ULONG data;
 }PACKET_EVENT, * PPACKET_EVENT;
 
+
+INT random_number(INT min_num, INT max_num)
+{
+	INT low_num = 0, hi_num = 0;
+
+	if (min_num < max_num)
+	{
+		low_num = min_num;
+		hi_num = max_num + 1;
+	}
+	else
+	{
+		low_num = max_num + 1;
+		hi_num = min_num;
+	}
+
+	srand(time(NULL));
+	return (rand() % (hi_num - low_num)) + low_num;
+}
+
+
+double random_number(double min_num, double max_num)
+{
+	double low_num = 0.0, hi_num = 0.0;
+
+	if (min_num < max_num)
+	{
+		low_num = min_num;
+		hi_num = max_num + 1.0;
+	}
+	else
+	{
+		low_num = max_num + 1.0;
+		hi_num = min_num;
+	}
+
+	srand(time(NULL));
+	return low_num + (hi_num - low_num) * fabs(sin(rand() * rand()));
+}
 
 #endif

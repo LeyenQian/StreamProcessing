@@ -187,14 +187,12 @@ BOOL IOCP_Client::HeartBeat(PPER_LINK_INFO p_per_link_info)
   Args:     PPER_LINK_INFO p_per_link_info
               I/O info structure that descripes the connection
 
-            PCHAR account
-
   Modifies: [p_per_link_info]
 
   Returns:  BOOL
               operation status
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info, PCHAR account)
+BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info)
 {
     p_per_link_info = p_ser_link_info;
     ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
@@ -202,7 +200,8 @@ BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info, PCHAR account)
     ((PPACKET_LOGON)p_per_link_info->p_per_io_info[1].buffer)->packet_header.comm_code = MSG_LOGON;
     ((PPACKET_LOGON)p_per_link_info->p_per_io_info[1].buffer)->packet_header.packet_len = sizeof(PACKET_LOGON);
 
-    strcpy_s(((PPACKET_LOGON)p_per_link_info->p_per_io_info[1].buffer)->account, account);
+    const char* device_id = config["device_id"].GetString();
+    strcpy_s(((PPACKET_LOGON)p_per_link_info->p_per_io_info[1].buffer)->account, device_id);
 
     p_per_link_info->p_per_io_info[1].w_buf.len = sizeof(PACKET_LOGON);
 
@@ -251,16 +250,15 @@ BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, UL
   Args:     PPER_LINK_INFO p_per_link_info
               I/O info structure that descripes the connection
 
-            INT32 latitude
-            INT32 longitude
-            INT32 accuracy
+            double latitude
+            double longitude
 
   Modifies: [p_per_link_info]
 
   Returns:  BOOL
               operation status
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, INT32 longitude, INT32 accuracy)
+BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, double latitude, double longitude)
 {
     p_per_link_info = p_ser_link_info;
     ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
@@ -270,7 +268,6 @@ BOOL IOCP_Client::SendLocation(PPER_LINK_INFO p_per_link_info, INT32 latitude, I
 
     ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->latitude = latitude;
     ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->longitude = longitude;
-    ((PPACKET_GEO_LOCATION)p_per_link_info->p_per_io_info[1].buffer)->accuracy = accuracy;
 
     p_per_link_info->p_per_io_info[1].w_buf.len = sizeof(PACKET_GEO_LOCATION);
 
@@ -558,13 +555,20 @@ int main(int argc, char const* argv[])
     printf("\n\n------------------- Test  IOCP -------------------\n");
     IOCP_Client client;
     client.CompletePortStart("127.0.0.1", 9003);
-    client.Logon(NULL, "test_client");
-    client.SendLocation(NULL, 1, 1, 255);
-    client.SendEvent(NULL, 1, 1);
+    
+    client.Logon(NULL);
+    Sleep(3000);
 
-    while (TRUE)
+    while (client.logon_status)
     {
-        Sleep(1000);
+        //Sleep(500); client.SendEvent(NULL, EVENT_A, 0);
+        //Sleep(500); client.SendEvent(NULL, EVENT_B, 0);
+        //Sleep(500); client.SendEvent(NULL, EVENT_C, 0);
+        //Sleep(500); client.SendEvent(NULL, EVENT_D, 0);
+        //Sleep(500); client.SendEvent(NULL, EVENT_E, random_number(0, 255));
+        //Sleep(500); client.SendEvent(NULL, EVENT_F, random_number(-100, 100));
+        Sleep(500); client.SendLocation(NULL, random_number(40.006990489862585, 40.006999489862585), random_number(-105.26284055171497, -105.26284955171497));
     }
+    
     return 0;
 }
