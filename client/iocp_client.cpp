@@ -567,7 +567,7 @@ int main(int argc, char const* argv[])
         //Sleep(500); client.SendEvent(NULL, EVENT_D, 0);
         //Sleep(500); client.SendEvent(NULL, EVENT_E, random_number(0, 255));
         //Sleep(500); client.SendEvent(NULL, EVENT_F, random_number(-100, 100));
-        Sleep(500); client.SendLocation(NULL, random_number(40.006990489862585, 40.006999489862585), random_number(-105.26284055171497, -105.26284955171497));
+        Sleep(1000); client.SendLocation(NULL, random_number(39.006990489862585, 41.909999489862585), random_number(-105.26284055171497, -106.96984955171497));
     }
     
     return 0;

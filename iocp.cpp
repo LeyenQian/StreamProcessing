@@ -266,6 +266,10 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
     PPER_IO_INFO p_per_io_Info = NULL;
     PPER_LINK_INFO p_per_link_info = NULL;
 
+    // exclusive redis instance
+    RedisConnector* p_redis = new RedisConnector("192.168.1.140", 6379);
+    p_redis->Connect();
+
     while( TRUE )
     {
         GetQueuedCompletionStatus( p_this->h_iocp, &actual_trans, (PULONG_PTR)&p_per_link_info, &p_overlapped, INFINITE );
@@ -322,10 +326,10 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
                     stringstream location;
                     location << detection["longitude"].GetString() << " " << detection["latitude"].GetString();
 
-                    BOOL prev_status = p_this->p_redis->DetectGeofence(location.str(), range, string(p_per_link_info->client_info.account));
+                    BOOL prev_status = p_redis->DetectGeofence(location.str(), range, string(p_per_link_info->client_info.account));
                     PPACKET_GEO_LOCATION p_location = (PPACKET_GEO_LOCATION)p_per_io_Info->buffer;
-                    p_this->p_redis->InsertGeospatial(p_location, string(p_per_link_info->client_info.account));
-                    BOOL curr_status = p_this->p_redis->DetectGeofence(location.str(), range, string(p_per_link_info->client_info.account));
+                    p_redis->InsertGeospatial(p_location, string(p_per_link_info->client_info.account));
+                    BOOL curr_status = p_redis->DetectGeofence(location.str(), range, string(p_per_link_info->client_info.account));
 
                     if (prev_status && !curr_status)
                     {
@@ -636,8 +640,6 @@ BOOL IOCP::InitialRedis()
     {
         stringstream commands;
         commands << "TS.CREATE event:" << device_ids[i].GetString() << " LABELS device_id " << device_ids[i].GetString();
-        
-        /*printf("%s\n", commands.str().c_str());*/
     }
 
     return TRUE;
@@ -676,7 +678,6 @@ IOCP::IOCP()
     printf("------------------- Test Redis -------------------\n");
     p_redis = new RedisConnector("192.168.1.140", 6379);
     p_redis->Connect();
-    //p_redis->TestRedis();
 }
 
 

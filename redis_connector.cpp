@@ -13,7 +13,7 @@ M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 RedisConnector::RedisConnector(const string address, const INT port)
 {
     this->p_redis_context = NULL;
-    this->timeout = {1, 500000};
+    this->timeout = {3, 0};
     this->address = address;
     this->port = port;
 }
@@ -100,9 +100,8 @@ VOID RedisConnector::InsertGeospatial(PPACKET_GEO_LOCATION p_location, const str
     stringstream commands;
     commands.precision(17);
     commands << "GEOADD dev_loc CH " << p_location->longitude << " " << p_location->latitude << " " << device_id;
-    
     P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands.str().c_str());
-    freeReplyObject(p_reply);
+    if (p_reply != NULL) freeReplyObject(p_reply);
 }
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
@@ -129,20 +128,17 @@ VOID RedisConnector::DetectObjectInRange(Value& device_ids, const string distanc
         P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands.str().c_str());
 
         result_stream << "*********************** Result for " << device_ids[i].GetString() << " ***********************" << endl;
-        if (p_reply->type == REDIS_REPLY_ARRAY)
+        if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY)
         {
             for (int j = 0; j < p_reply->elements; j++)
             {
+                if (p_reply->element[j]->elements == 0) continue;
                 result_stream << "Device_ID: " << p_reply->element[j]->element[0]->str << endl;
                 result_stream << "Distance to " << device_ids[i].GetString() << ": " << p_reply->element[j]->element[1]->str << endl << endl;
             }
         }
-        else
-        {
-            result_stream << p_reply->str << endl;
-        }
 
-        freeReplyObject(p_reply);
+        if (p_reply != NULL) freeReplyObject(p_reply);
     }
 
     result.assign(result_stream.str());
@@ -171,7 +167,7 @@ VOID RedisConnector::CountObjectInRange(const string location, const string dist
     stringstream result_stream;
     result_stream << "*********************** Result for " << location << " ***********************" << endl;
     result_stream << "Total devices passing the radius " << distance << " from " << location << " is " << p_reply->elements << endl;
-    if (p_reply->type == REDIS_REPLY_ARRAY)
+    if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY)
     {
         for (int j = 0; j < p_reply->elements; j++)
         {
@@ -179,11 +175,8 @@ VOID RedisConnector::CountObjectInRange(const string location, const string dist
             result_stream << "Distance to " << location << ": " << p_reply->element[j]->element[1]->str << endl << endl;
         }
     }
-    else
-    {
-        result_stream << p_reply->str << endl;
-    }
-    freeReplyObject(p_reply);
+
+    if (p_reply != NULL) freeReplyObject(p_reply);
     result.assign(result_stream.str());
 }
 
@@ -207,19 +200,20 @@ BOOL RedisConnector::DetectGeofence(const string location, const string distance
     commands << "GEOSEARCH dev_loc FROMLONLAT " << location << " BYRADIUS " << distance << " ASC";
     P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands.str().c_str());
 
-    if (p_reply->type == REDIS_REPLY_ARRAY)
+    if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY)
     {
         for (int j = 0; j < p_reply->elements; j++)
         {
+            if (p_reply->element[j]->str == NULL) continue;
             if (strcmp(p_reply->element[j]->str, device_id.c_str()) == 0)
             {
-                freeReplyObject(p_reply);
+                if (p_reply != NULL) freeReplyObject(p_reply);
                 return TRUE;
             }
         }
     }
 
-    freeReplyObject(p_reply);
+    if (p_reply != NULL) freeReplyObject(p_reply);
     return FALSE;
 }
 
