@@ -61,11 +61,15 @@ public:
     INT ExecuteCommand(const string command);
 
     VOID InsertGeospatial(PPACKET_GEO_LOCATION p_location, const string device_id);
-    VOID InsertEvent(PPACKET_EVENT p_event);
+    VOID InsertEvent(PPACKET_EVENT p_event, const string device_id);
 
     VOID DetectObjectInRange(Value& device_ids, const string distance, string& result);
     VOID CountObjectInRange(const string location, const string distance, string& result);
     BOOL DetectGeofence(const string location, const string distance, const string device_id);
+
+    VOID Temporal(Value& tem, Value& devs, string& result);
+    VOID Sequence(Value& seq, Value& devs, string& result);
+    VOID Evaluation(Value& eva, Value& devs, string& result);
 
     VOID TestRedis();
 };

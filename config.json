@@ -16,6 +16,10 @@
     "AB1345ED80"
   ],
 
+  "event_types": [
+    "A", "B", "C", "D", "E", "F"
+  ],
+
   "available_unit": [ "m", "km", "ft", "mi" ],
 
   "geofence": {
@@ -28,5 +32,17 @@
     "latitude": "40.00699",
     "longitude": "-105.26284",
     "radius": "2500000 ft"
+  },
+
+  "temporal": {
+    "time": 10,
+    "frequency": 3
+  },
+
+  "sequence": [ "ABC", "ABD", "ACD" ],
+
+  "evaluation": {
+    "E": { ">": 10 },
+    "F": { "<": 10 }
   }
 }

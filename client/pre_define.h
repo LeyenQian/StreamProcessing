@@ -48,14 +48,6 @@ typedef INT OPSTATUS;
 #define MSG_GEO_LOCATION	0x6
 #define MSG_EVENT			0x7
 
-#define EVENT_A				0x1
-#define EVENT_B				0x2
-#define EVENT_C				0x3
-#define EVENT_D				0x4
-#define EVENT_E				0x5
-#define EVENT_F				0x6
-#define EVENT_A				0x7
-
 typedef struct _PER_IO_INFO
 {
 	ULONG       op_type;
@@ -107,8 +99,8 @@ typedef struct _PACKET_GEO_LOCATION
 typedef struct _PACKET_EVENT
 {
 	PACKET_HEADER packet_header;
-	ULONG type;
-	ULONG data;
+	CHAR type[8];
+	LONG data;
 }PACKET_EVENT, * PPACKET_EVENT;
 
 

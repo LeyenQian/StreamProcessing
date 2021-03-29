@@ -345,7 +345,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
                 case MSG_EVENT:
                 {
                     PPACKET_EVENT p_event = (PPACKET_EVENT)p_per_io_Info->buffer;
-                    printf("Event Type: %d\n", p_event->type);
+                    p_redis->InsertEvent(p_event, string(p_per_link_info->client_info.account));
                     break;
                 }
                 case MSG_HEART_BEAT:
@@ -386,6 +386,8 @@ M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP::GenerateGeospatialReportThread( LPVOID arg_list )
 {
     IOCP* p_this = static_cast<IOCP*>(arg_list);
+    RedisConnector* p_redis = new RedisConnector("192.168.1.140", 6379);
+    p_redis->Connect();
 
     while (TRUE)
     {
@@ -398,11 +400,11 @@ UINT WINAPI IOCP::GenerateGeospatialReportThread( LPVOID arg_list )
         // Detect n objects within x feet of each other
         // here we iterate all devices and find all devices that within x feet, which include itself.
         string result_a;
-        p_this->p_redis->DetectObjectInRange(device_ids, range, result_a);
+        p_redis->DetectObjectInRange(device_ids, range, result_a);
 
         // Count objects passing a radius from a given position
         string result_b;
-        p_this->p_redis->CountObjectInRange(location.str(), range, result_b);
+        p_redis->CountObjectInRange(location.str(), range, result_b);
 
         // save report locally
         ofstream ofs("geospatial_report.txt", ios::out | ios::trunc);
@@ -430,8 +432,34 @@ UINT WINAPI IOCP::GenerateGeospatialReportThread( LPVOID arg_list )
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP::GenerateEventReportThread( LPVOID arg_list )
 {
+    IOCP* p_this = static_cast<IOCP*>(arg_list);
+    RedisConnector* p_redis = new RedisConnector("192.168.1.140", 6379);
+    p_redis->Connect();
+
     while (TRUE)
     {
+        Value& tem = p_this->config["temporal"];
+        Value& seq = p_this->config["sequence"];
+        Value& eva = p_this->config["evaluation"];
+        Value& devs = p_this->config["device_ids"];
+
+        string result_a;
+        p_redis->Temporal(tem, devs, result_a);
+
+        string result_b;
+        p_redis->Sequence(seq, devs, result_b);
+
+        string result_c;
+        p_redis->Evaluation(eva, devs, result_c);
+
+        ofstream ofs("event_report.txt", ios::out | ios::trunc);
+        ofs << "---------------Temporal---------------" << endl;
+        ofs << result_a << endl << endl;
+        ofs << "---------------Sequence---------------" << endl;
+        ofs << result_b << endl << endl;
+        ofs << "---------------Evaluation---------------" << endl;
+        ofs << result_c;
+        ofs.close();
         Sleep(5000);
     }
     return 0;
@@ -635,11 +663,18 @@ OPSTATUS IOCP::CompletePortStart( string address, INT port )
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 BOOL IOCP::InitialRedis()
 {
+    // TS.CREATE event:A:AB1345ED79 RETENTION 60000 DUPLICATE_POLICY MAX LABELS event_type A device_id AB1345ED79
     Value& device_ids = config["device_ids"];
+    Value& event_types = config["event_types"];
+
     for (SizeType i = 0; i < device_ids.Size(); i++)
     {
-        stringstream commands;
-        commands << "TS.CREATE event:" << device_ids[i].GetString() << " LABELS device_id " << device_ids[i].GetString();
+        for (SizeType j = 0; j < event_types.Size(); j++)
+        {
+            stringstream commands;
+            commands << "TS.CREATE event:" << event_types[j].GetString() << ":" << device_ids[i].GetString() << " LABELS event_type " << event_types[j].GetString() << " device_id " << device_ids[i].GetString();
+            p_redis->ExecuteCommand(commands.str());
+        }
     }
 
     return TRUE;

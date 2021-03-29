@@ -105,6 +105,27 @@ VOID RedisConnector::InsertGeospatial(PPACKET_GEO_LOCATION p_location, const str
 }
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   RedisConnector::InsertEvent
+
+  Summary:  insert event info
+
+  Args:     PPACKET_EVENT p_event
+            const string device_id
+
+  Modifies: [p_redis_reply]
+
+  Returns:  VOID
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+VOID RedisConnector::InsertEvent(PPACKET_EVENT p_event, const string device_id)
+{
+    // TS.ADD event:A:AB1345ED79 * 0
+    stringstream commands;
+    commands << "TS.ADD event:" << p_event->type << ":" << device_id << " * " << p_event->data;
+    P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands.str().c_str());
+    if (p_reply != NULL) freeReplyObject(p_reply);
+}
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
   Method:   RedisConnector::DetectObjectInRange
 
   Summary:  find object within range, query all devices
@@ -217,6 +238,108 @@ BOOL RedisConnector::DetectGeofence(const string location, const string distance
     return FALSE;
 }
 
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   RedisConnector::Temporal
+
+  Summary:  Detect when event B occurs within x minutes of event A.
+            Detect when event A occurs at least n times within x minutes.
+
+  Args:     Value& tem
+            Value& devs
+
+  Modifies: [p_redis_reply]
+
+  Returns:  VOID
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
+{
+    stringstream result_stream;
+
+    for (SizeType i = 0; i < devs.Size(); i++)
+    {
+        stringstream dev_result;
+        string dev = devs[i].GetString();
+        int time = tem["time"].GetInt() * 1000;
+        int frequency = tem["frequency"].GetInt();
+
+        stringstream commands_a;
+        stringstream commands_b;
+        stringstream commands_c;
+        long long beg = 0;
+        long long end = 0;
+        
+        // Detect when event B occurs within x minutes of event A.
+        commands_a << "TS.GET event:A:" << dev;
+        P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands_a.str().c_str());
+        if (p_reply != NULL && p_reply->element != NULL && p_reply->type == REDIS_REPLY_ARRAY)
+        {
+            beg = p_reply->element[0]->integer - time;
+            end = p_reply->element[0]->integer;
+            commands_b << "TS.RANGE event:B:" << dev << " " << beg << " " << end;
+            if (p_reply != NULL) freeReplyObject(p_reply);
+        }
+
+        if (commands_b.str().size() > 8)
+        {
+            p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands_b.str().c_str());
+            if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY)
+            {
+                dev_result << "From device " << dev << " [ event B occurs within " << tem["time"].GetInt() << " minutes of event A ]" << endl;
+                for (int j = 0; j < p_reply->elements; j++)
+                {
+                    dev_result << p_reply->element[j]->element[0]->integer << endl;
+                }
+                if (p_reply != NULL) freeReplyObject(p_reply);
+            }
+        }
+
+        // Detect when event A occurs at least n times within x minutes
+        commands_c << "TS.RANGE event:A:" << dev << " " << beg << " " << end;
+        p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands_c.str().c_str());
+        if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY && p_reply->elements >= frequency)
+        {
+            dev_result << endl << "From device " << dev << " [ event A occurs at least " << frequency << " within " << tem["time"].GetInt() << " minutes ]" << endl;
+            dev_result << p_reply->elements << " times";
+            if (p_reply != NULL) freeReplyObject(p_reply);
+        }
+        result_stream << dev_result.str() << endl;
+    }
+    result = result_stream.str();
+}
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   RedisConnector::Sequence
+
+  Summary:  Detect when event A occurs, followed by event B, followed by event C
+            Detect when event A occurs, followed by event B or event C, followed by event D
+
+  Args:     Value& seq
+            Value& devs
+
+  Modifies: [p_redis_reply]
+
+  Returns:  VOID
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+VOID RedisConnector::Sequence(Value& seq, Value& devs, string& result)
+{
+}
+
+/*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
+  Method:   RedisConnector::Evaluation
+
+  Summary:  Detect when the value of Event E is greater than y
+            Detect when the average of the last n values for Event F is less than y
+
+  Args:     Value& eva
+            Value& devs
+
+  Modifies: [p_redis_reply]
+
+  Returns:  VOID
+M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
+VOID RedisConnector::Evaluation(Value& eva, Value& devs, string& result)
+{
+}
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
   Method:   RedisConnector::TestRedis

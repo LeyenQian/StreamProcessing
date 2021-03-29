@@ -225,7 +225,7 @@ BOOL IOCP_Client::Logon(PPER_LINK_INFO p_per_link_info)
   Returns:  BOOL
               operation status
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, ULONG event_data)
+BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, CHAR event_type, ULONG event_data)
 {
     p_per_link_info = p_ser_link_info;
     ZeroMemory(p_per_link_info->p_per_io_info[1].buffer, MAX_BUF_LEN);
@@ -233,7 +233,7 @@ BOOL IOCP_Client::SendEvent(PPER_LINK_INFO p_per_link_info, ULONG event_type, UL
     ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->packet_header.comm_code = MSG_EVENT;
     ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->packet_header.packet_len = sizeof(PACKET_EVENT);
 
-    ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->type = event_type;
+    memcpy(((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->type, &event_type, 1);
     ((PPACKET_EVENT)p_per_link_info->p_per_io_info[1].buffer)->data = event_data;
 
     p_per_link_info->p_per_io_info[1].w_buf.len = sizeof(PACKET_EVENT);
@@ -561,12 +561,12 @@ int main(int argc, char const* argv[])
 
     while (client.logon_status)
     {
-        //Sleep(500); client.SendEvent(NULL, EVENT_A, 0);
-        //Sleep(500); client.SendEvent(NULL, EVENT_B, 0);
-        //Sleep(500); client.SendEvent(NULL, EVENT_C, 0);
-        //Sleep(500); client.SendEvent(NULL, EVENT_D, 0);
-        //Sleep(500); client.SendEvent(NULL, EVENT_E, random_number(0, 255));
-        //Sleep(500); client.SendEvent(NULL, EVENT_F, random_number(-100, 100));
+        Sleep(500); client.SendEvent(NULL, 'A', 0);
+        Sleep(500); client.SendEvent(NULL, 'B', 0);
+        Sleep(500); client.SendEvent(NULL, 'C', 0);
+        Sleep(500); client.SendEvent(NULL, 'D', 0);
+        Sleep(500); client.SendEvent(NULL, 'E', random_number(0, 255));
+        Sleep(500); client.SendEvent(NULL, 'F', random_number(-100, 100));
         Sleep(1000); client.SendLocation(NULL, random_number(39.006990489862585, 41.909999489862585), random_number(-105.26284055171497, -106.96984955171497));
     }
     
