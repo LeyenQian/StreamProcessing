@@ -259,7 +259,7 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
     {
         stringstream dev_result;
         string dev = devs[i].GetString();
-        int time = tem["time"].GetInt() * 1000;
+        int time = tem["time"].GetInt() * 10000;
         int frequency = tem["frequency"].GetInt();
 
         stringstream commands_a;
@@ -298,7 +298,7 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
         p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands_c.str().c_str());
         if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY && p_reply->elements >= frequency)
         {
-            dev_result << endl << "From device " << dev << " [ event A occurs at least " << frequency << " within " << tem["time"].GetInt() << " minutes ]" << endl;
+            dev_result << endl << "From device " << dev << " [ event A occurs at least " << frequency << " times within " << tem["time"].GetInt() << " minutes ]" << endl;
             dev_result << p_reply->elements << " times";
             if (p_reply != NULL) freeReplyObject(p_reply);
         }
@@ -322,6 +322,9 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 VOID RedisConnector::Sequence(Value& seq, Value& devs, string& result)
 {
+    for (SizeType i = 0; i < devs.Size(); i++)
+    {
+    }
 }
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M
