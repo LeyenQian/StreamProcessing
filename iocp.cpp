@@ -411,7 +411,7 @@ UINT WINAPI IOCP::GenerateGeospatialReportThread( LPVOID arg_list )
         ofs << result_a << endl << endl << result_b;
         ofs.close();
 
-        Sleep(5000);
+        Sleep(1000);
     }
     return 0;
 }
@@ -460,7 +460,7 @@ UINT WINAPI IOCP::GenerateEventReportThread( LPVOID arg_list )
         ofs << "---------------Evaluation---------------" << endl;
         ofs << result_c;
         ofs.close();
-        Sleep(5000);
+        Sleep(1000);
     }
     return 0;
 }
