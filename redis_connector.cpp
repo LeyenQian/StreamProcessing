@@ -322,9 +322,45 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 VOID RedisConnector::Sequence(Value& seq, Value& devs, string& result)
 {
-    for (SizeType i = 0; i < devs.Size(); i++)
+    stringstream result_stream;
+
+    for (SizeType j = 0; j < seq.Size(); j++)
     {
+        for (SizeType i = 0; i < devs.Size(); i++)
+        {
+            stringstream dev_result;
+            string dev = devs[i].GetString();
+            int event_interval = 3 * 1000;
+            string events = seq[j].GetString();
+
+            stringstream commands_a;
+            commands_a << "TS.MREVRANGE - + COUNT 1 FILTER event_type=(" << events << ") device_id=" << dev;
+            P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, commands_a.str().c_str());
+
+            if (p_reply != NULL && p_reply->element != NULL && p_reply->type == REDIS_REPLY_ARRAY)
+            {
+                do
+                {
+                    if (p_reply->elements != events.size() - 2) break;
+                    dev_result << "From device " << dev << " [ events order " << events << " ]" << endl;
+                    long long prev_timestamp = 0;
+                    for (int z = 0; z < p_reply->elements; z++)
+                    {
+                        if (p_reply->element[z]->element[2]->elements == 0) goto FREE;
+                        if (p_reply->element[z]->element[2]->element[0]->element[0]->integer < prev_timestamp) goto FREE;
+                        prev_timestamp = p_reply->element[z]->element[2]->element[0]->element[0]->integer;
+
+                        dev_result << "     timestamp: " << prev_timestamp << " from key: " << p_reply->element[z]->element[0]->str << endl;
+                    }
+                    result_stream << dev_result.str() << endl;
+                } while (false);
+
+                FREE:
+                if (p_reply != NULL) freeReplyObject(p_reply);
+            }
+        }
     }
+    result = result_stream.str();
 }
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

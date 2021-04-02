@@ -39,7 +39,7 @@
     "frequency": 3
   },
 
-  "sequence": [ "ABC", "ABD", "ACD" ],
+  "sequence": [ "A,B,C", "A,B,D", "A,C,D" ],
 
   "evaluation": {
     "E": { ">": 10 },
