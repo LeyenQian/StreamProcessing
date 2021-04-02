@@ -672,7 +672,7 @@ BOOL IOCP::InitialRedis()
         for (SizeType j = 0; j < event_types.Size(); j++)
         {
             stringstream commands;
-            commands << "TS.CREATE event:" << event_types[j].GetString() << ":" << device_ids[i].GetString() << " LABELS event_type " << event_types[j].GetString() << " device_id " << device_ids[i].GetString();
+            commands << "TS.CREATE event:" << event_types[j].GetString() << ":" << device_ids[i].GetString() << " RETENTION 0 LABELS event_type " << event_types[j].GetString() << " device_id " << device_ids[i].GetString();
             p_redis->ExecuteCommand(commands.str());
         }
     }

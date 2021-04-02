@@ -170,9 +170,9 @@ VOID RedisConnector::DetectObjectInRange(Value& device_ids, const string distanc
 
   Summary:  count objects passing a radius from a given position
 
-  Args:     const string location
-            const string distance
-            string result
+  Args:     const   string location
+            const   string distance
+            string& result
 
   Modifies: [p_redis_reply]
 
@@ -244,8 +244,9 @@ BOOL RedisConnector::DetectGeofence(const string location, const string distance
   Summary:  Detect when event B occurs within x minutes of event A.
             Detect when event A occurs at least n times within x minutes.
 
-  Args:     Value& tem
-            Value& devs
+  Args:     Value&  tem
+            Value&  devs
+            string& result
 
   Modifies: [p_redis_reply]
 
@@ -287,7 +288,7 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
                 dev_result << "From device " << dev << " [ event B occurs within " << tem["time"].GetInt() << " minutes of event A ]" << endl;
                 for (int j = 0; j < p_reply->elements; j++)
                 {
-                    dev_result << p_reply->element[j]->element[0]->integer << endl;
+                    dev_result << "     timestamp: " << p_reply->element[j]->element[0]->integer << endl;
                 }
                 if (p_reply != NULL) freeReplyObject(p_reply);
             }
@@ -299,10 +300,10 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
         if (p_reply != NULL && p_reply->type == REDIS_REPLY_ARRAY && p_reply->elements >= frequency)
         {
             dev_result << endl << "From device " << dev << " [ event A occurs at least " << frequency << " times within " << tem["time"].GetInt() << " minutes ]" << endl;
-            dev_result << p_reply->elements << " times";
+            dev_result << "     " << p_reply->elements << " times";
             if (p_reply != NULL) freeReplyObject(p_reply);
+            result_stream << dev_result.str() << endl;
         }
-        result_stream << dev_result.str() << endl;
     }
     result = result_stream.str();
 }
@@ -313,9 +314,9 @@ VOID RedisConnector::Temporal(Value& tem, Value& devs, string& result)
   Summary:  Detect when event A occurs, followed by event B, followed by event C
             Detect when event A occurs, followed by event B or event C, followed by event D
 
-  Args:     Value& seq
-            Value& devs
-
+  Args:     Value&  seq
+            Value&  devs
+            string& result
   Modifies: [p_redis_reply]
 
   Returns:  VOID
@@ -369,15 +370,90 @@ VOID RedisConnector::Sequence(Value& seq, Value& devs, string& result)
   Summary:  Detect when the value of Event E is greater than y
             Detect when the average of the last n values for Event F is less than y
 
-  Args:     Value& eva
-            Value& devs
-
+  Args:     Value&  eva
+            Value&  devs
+            string& result
   Modifies: [p_redis_reply]
 
   Returns:  VOID
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 VOID RedisConnector::Evaluation(Value& eva, Value& devs, string& result)
 {
+    stringstream result_stream;
+    for (SizeType j = 0; j < eva.Size(); j++)
+    {
+        string event_type = eva[j]["event"].GetString();
+        string sign_type = eva[j]["sign"].GetString();
+        int count = eva[j]["count"].GetInt();
+        int threshold = eva[j]["threshold"].GetInt();
+
+        for (SizeType i = 0; i < devs.Size(); i++)
+        {
+            stringstream dev_result;
+            stringstream command;
+            string dev = devs[i].GetString();
+
+            if (sign_type.compare(">") == 0)
+            {
+                command << "TS.MREVRANGE - + COUNT 10 FILTER event_type=" << event_type << " device_id=" << dev;
+                P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, command.str().c_str());
+                if (p_reply != NULL && p_reply->element != NULL && p_reply->type == REDIS_REPLY_ARRAY)
+                {
+                    stringstream temp;
+                    for (int z = 0; z < p_reply->element[0]->element[2]->elements; z++)
+                    {
+                        P_REDIS_REPLY p_ele_key_value = p_reply->element[0]->element[2]->element[z];
+                        P_REDIS_REPLY p_key = p_ele_key_value->element[0];
+                        P_REDIS_REPLY p_value = p_ele_key_value->element[1];
+                        long long key = p_key->integer;
+                        int value = stoi(string(p_value->str));
+                        
+                        if (value > threshold)
+                        {
+                            temp << "     timestamp: " << key << " value: " << value << endl;
+                        }
+                    }
+                    if (temp.str().size() != 0)
+                    {
+                        dev_result << "From device " << dev << " [ value of Event E is greater than " << threshold << " ]" << endl;
+                        dev_result << temp.str();
+                    }
+                }
+                if (p_reply != NULL) freeReplyObject(p_reply);
+            }
+            else if (sign_type.compare("avg<") == 0)
+            {
+                command << "TS.MREVRANGE - + COUNT " << count << " FILTER event_type=" << event_type << " device_id=" << dev;
+                P_REDIS_REPLY p_reply = (P_REDIS_REPLY)redisCommand(p_redis_context, command.str().c_str());
+                if (p_reply != NULL && p_reply->element != NULL && p_reply->type == REDIS_REPLY_ARRAY)
+                {
+                    long long total = 0;
+                    for (int z = 0; z < p_reply->element[0]->element[2]->elements; z++)
+                    {
+                        P_REDIS_REPLY p_ele_key_value = p_reply->element[0]->element[2]->element[z];
+                        P_REDIS_REPLY p_key = p_ele_key_value->element[0];
+                        P_REDIS_REPLY p_value = p_ele_key_value->element[1];
+                        long long key = p_key->integer;
+                        int value = stoi(string(p_value->str));
+                        total += value;
+                    }
+
+                    if (p_reply->element[0]->element[2]->elements == count)
+                    {
+                        int avg = total / int(p_reply->element[0]->element[2]->elements);
+                        if (avg < threshold)
+                        {
+                            dev_result << "From device " << dev << " [ average of the last " << count << " values for Event F is less than " << threshold << " ]" << endl;
+                            dev_result << "     avg: " << avg << endl;
+                        }
+                    }
+                }
+                if (p_reply != NULL) freeReplyObject(p_reply);
+            }
+            if(dev_result.str().size() > 0) result_stream << dev_result.str() << endl;
+        }
+    }
+    result = result_stream.str();
 }
 
 /*M+M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M+++M

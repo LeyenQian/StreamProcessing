@@ -41,8 +41,18 @@
 
   "sequence": [ "A,B,C", "A,B,D", "A,C,D" ],
 
-  "evaluation": {
-    "E": { ">": 10 },
-    "F": { "<": 10 }
-  }
+  "evaluation": [
+    {
+      "event": "E",
+      "sign": ">",
+      "count": -1,
+      "threshold": 10
+    },
+    {
+      "event": "F",
+      "sign": "avg<",
+      "count": 10,
+      "threshold": 10
+    }
+  ]
 }
