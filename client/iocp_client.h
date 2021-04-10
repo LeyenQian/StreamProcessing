@@ -27,6 +27,8 @@ private:
     LPFN_DISCONNECTEX p_DisconnectEx = NULL;
     LPFN_GETACCEPTEXSOCKADDRS p_GetAcceptExSockAddrs = NULL;
     Document config;
+    string server_addr;
+    int server_port;
 
 public:
     HANDLE h_iocp = NULL;
@@ -50,7 +52,7 @@ public:
 
     OPSTATUS InitWinSock();
     OPSTATUS InitialEnvironment();
-    OPSTATUS CompletePortStart(string address, INT port);
+    OPSTATUS CompletePortStart();
     OPSTATUS IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans);
     OPSTATUS PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len);
 };

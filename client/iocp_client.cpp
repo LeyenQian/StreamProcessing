@@ -469,6 +469,9 @@ OPSTATUS IOCP_Client::InitialEnvironment()
         return OP_FAILED;
     }
 
+    this->server_addr = this->config["server_address"].GetString();
+    this->server_port = this->config["server_port"].GetInt();
+
     return OP_SUCCESS;
 }
 
@@ -480,26 +483,23 @@ OPSTATUS IOCP_Client::InitialEnvironment()
             create I/O completion port on socket
             create one IOCP thread for network events processing
 
-  Args:     LPVOID arg_list
-              contain the "this" pointer of IOCP instance
-
   Modifies: [h_iocp]
 
   Returns:  OPSTATUS
               operation status
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-OPSTATUS IOCP_Client::CompletePortStart(string address, INT port)
+OPSTATUS IOCP_Client::CompletePortStart()
 {
     SOCKADDR_IN sock_addr = { 0 };
     sock_addr.sin_family = AF_INET;
-    sock_addr.sin_port = htons(port);
-    sock_addr.sin_addr.S_un.S_addr = inet_addr(address.c_str());
+    sock_addr.sin_port = htons(this->server_port);
+    sock_addr.sin_addr.S_un.S_addr = inet_addr(this->server_addr.c_str());
 
     // connect to server side
     while (TRUE)
     {
         Sleep(1000);
-        printf("#Log: Try to connect the server from %s : %d\n", address.c_str(), port);
+        printf("#Log: Try to connect the server from %s : %d\n", this->server_addr.c_str(), this->server_port);
         if (connect(p_ser_link_info->socket, (PSOCKADDR)&sock_addr, sizeof(SOCKADDR_IN)) == 0)
         {
             break;
@@ -554,7 +554,7 @@ int main(int argc, char const* argv[])
 {
     printf("\n\n------------------- Test  IOCP -------------------\n");
     IOCP_Client client;
-    client.CompletePortStart("127.0.0.1", 9003);
+    client.CompletePortStart();
     
     client.Logon(NULL);
     Sleep(3000);

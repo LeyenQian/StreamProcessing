@@ -10,6 +10,10 @@ private:
     PPER_LINK_INFO p_ser_link_info = NULL;
     LinkPool link_pool;
     Document config;
+    string server_addr;
+    int server_port;
+    string redis_addr;
+    int redis_port;
     
     LPFN_ACCEPTEX p_AcceptEx = NULL;
     LPFN_DISCONNECTEX p_DisconnectEx = NULL;
@@ -32,7 +36,7 @@ public:
     BOOL LogonStatus(PPER_LINK_INFO p_per_link_info, ULONG status);
 
     OPSTATUS InitialEnvironment();
-    OPSTATUS CompletePortStart( string address, INT port );
+    OPSTATUS CompletePortStart();
     OPSTATUS AcceptClient(PPER_IO_INFO p_per_io_Info);
     OPSTATUS IsRecvFinish(PPER_LINK_INFO p_per_link_info, ULONG actual_trans);
     OPSTATUS PostRecv(PPER_LINK_INFO p_per_link_info, ULONG buff_offset, ULONG buff_len);

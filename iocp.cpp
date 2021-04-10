@@ -267,7 +267,7 @@ UINT WINAPI IOCP::DealThread( LPVOID arg_list )
     PPER_LINK_INFO p_per_link_info = NULL;
 
     // exclusive redis instance
-    RedisConnector* p_redis = new RedisConnector("192.168.1.140", 6379);
+    RedisConnector* p_redis = new RedisConnector(p_this->redis_addr.c_str(), p_this->redis_port);
     p_redis->Connect();
 
     while( TRUE )
@@ -386,7 +386,7 @@ M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP::GenerateGeospatialReportThread( LPVOID arg_list )
 {
     IOCP* p_this = static_cast<IOCP*>(arg_list);
-    RedisConnector* p_redis = new RedisConnector("192.168.1.140", 6379);
+    RedisConnector* p_redis = new RedisConnector(p_this->redis_addr.c_str(), p_this->redis_port);
     p_redis->Connect();
 
     while (TRUE)
@@ -433,7 +433,7 @@ M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
 UINT WINAPI IOCP::GenerateEventReportThread( LPVOID arg_list )
 {
     IOCP* p_this = static_cast<IOCP*>(arg_list);
-    RedisConnector* p_redis = new RedisConnector("192.168.1.140", 6379);
+    RedisConnector* p_redis = new RedisConnector(p_this->redis_addr.c_str(), p_this->redis_port);
     p_redis->Connect();
 
     while (TRUE)
@@ -541,6 +541,11 @@ OPSTATUS IOCP::InitialEnvironment()
         return OP_FAILED;
     }
 
+    this->server_addr = this->config["server_address"].GetString();
+    this->server_port = this->config["server_port"].GetInt();
+    this->redis_addr = this->config["redis_address"].GetString();
+    this->redis_port = this->config["redis_port"].GetInt();
+
     return OP_SUCCESS;
 }
 
@@ -551,21 +556,17 @@ OPSTATUS IOCP::InitialEnvironment()
   Summary:  start listening on the given address and port
             start 10 IOCP threads for network events processing
 
-  Args:     LPVOID arg_list
-              contain the "this" pointer of IOCP instance
-
   Modifies: [link_pool, p_redis, h_iocp]
 
   Returns:  OPSTATUS
               operation status
 M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M---M-M*/
-OPSTATUS IOCP::CompletePortStart( string address, INT port )
+OPSTATUS IOCP::CompletePortStart()
 {
-    // facade pattern
     SOCKADDR_IN sock_addr = {0};
     sock_addr.sin_family = AF_INET;
-    sock_addr.sin_port = htons(port);
-    sock_addr.sin_addr.S_un.S_addr = inet_addr(address.c_str() );
+    sock_addr.sin_port = htons(this->server_port);
+    sock_addr.sin_addr.S_un.S_addr = inet_addr(this->server_addr.c_str() );
 
     // bind socket to address & port
     if ( bind( p_ser_link_info->socket, (PSOCKADDR)&sock_addr, sizeof(SOCKADDR_IN) ) != 0 )
@@ -711,8 +712,9 @@ IOCP::IOCP()
 {
     InitialEnvironment();
     printf("------------------- Test Redis -------------------\n");
-    p_redis = new RedisConnector("192.168.1.140", 6379);
+    p_redis = new RedisConnector(this->redis_addr.c_str(), this->redis_port);
     p_redis->Connect();
+    p_redis->TestRedis();
 }
 
 
@@ -729,6 +731,6 @@ int main(int argc, char const *argv[])
     IOCP server;
     printf("\n\n------------------- Start  IOCP -------------------\n");
     server.InitialRedis();
-    server.CompletePortStart("127.0.0.1", 9003);
+    server.CompletePortStart();
     return 0;
 }

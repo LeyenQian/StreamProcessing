@@ -2,7 +2,7 @@
   "server_address": "127.0.0.1",
   "server_port": 9003,
 
-  "redis_address": "leyen.synology.me",
+  "redis_address": "192.168.1.140",
   "redis_port": 6379,
 
   "device_ids": [
